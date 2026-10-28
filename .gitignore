@@ -1,0 +1,6 @@
+.vs/
+**/bin/
+**/obj/
+*.user
+*.suo
+Barcode_Router/System_Log/

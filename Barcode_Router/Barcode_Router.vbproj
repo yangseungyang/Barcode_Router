@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3B7C2E5A-9D41-4F6B-A8E2-7C1D5F0B9A31}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>Barcode_Router.My.MyApplication</StartupObject>
+    <RootNamespace>Barcode_Router</RootNamespace>
+    <AssemblyName>Barcode_Router</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>WindowsForms</MyType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036</WarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>On</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EtherComN">
+      <HintPath>Reference\EtherComN.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <Compile Include="Program\Class\cls100_PLASMA_Order.vb" />
+    <Compile Include="Program\Class\clsRouterLog.vb" />
+    <Compile Include="Program\Class\clsRouterSetting.vb" />
+    <Compile Include="Program\Class\clsRouteJudge.vb" />
+    <Compile Include="Program\Class\clsRouterPort.vb" />
+    <Compile Include="Program\Class\clsWindowControl.vb" />
+    <Compile Include="Program\Class\clsUiTheme.vb" />
+    <Compile Include="Program\frmRouterMain.Designer.vb">
+      <DependentUpon>frmRouterMain.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Program\frmRouterMain.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program\frmRuleSetting.Designer.vb">
+      <DependentUpon>frmRuleSetting.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Program\frmRuleSetting.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program\frmDestEdit.Designer.vb">
+      <DependentUpon>frmDestEdit.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Program\frmDestEdit.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Program\frmComSetting.Designer.vb">
+      <DependentUpon>frmComSetting.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Program\frmComSetting.vb">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="App.config" />
+    <None Include="Files\RouterSetting.mdb" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+</Project>
