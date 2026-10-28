@@ -73,6 +73,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\ApplicationEvents.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
       <DependentUpon>Application.myapp</DependentUpon>
@@ -80,6 +81,7 @@
     </Compile>
     <Compile Include="Program\Class\cls100_PLASMA_Order.vb" />
     <Compile Include="Program\Class\clsRouterLog.vb" />
+    <Compile Include="Program\Class\clsRouterPath.vb" />
     <Compile Include="Program\Class\clsRouterSetting.vb" />
     <Compile Include="Program\Class\clsRouteJudge.vb" />
     <Compile Include="Program\Class\clsRouterPort.vb" />
@@ -117,6 +119,15 @@
     </None>
     <None Include="App.config" />
     <None Include="Files\RouterSetting.mdb" />
+  </ItemGroup>
+  <!-- Ver0.01 YSH ADD : exe 단독 실행용 내장 리소스 (빈 설정 MDB, EtherComN.dll) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Files\RouterSetting_Template.mdb">
+      <LogicalName>RouterSetting_Template.mdb</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reference\EtherComN.dll">
+      <LogicalName>EtherComN.dll</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

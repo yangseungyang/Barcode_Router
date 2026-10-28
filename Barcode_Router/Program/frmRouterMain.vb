@@ -19,18 +19,22 @@
 '                    제목줄 가운데 설비명 (COM 설정에서 입력, 2026-10-26 추가)
 'Issue      : 2026/10/26  Rev 0.00    YSH       New Release
 '             근거 : FAM3 증산 대응_내전압 설비 ADD-ON.md Rev 3  7항 / A8_FAM3_Router_구조설계_v1.1.xlsx
+'             2026/10/28  Rev 0.01    YSH       설정 / 로그를 exe 위치와 분리 (C:\Barcode_Router\), exe 단독 실행
+'             근거 : Barcode_Router 연동 공통 규약.md Rev 1  7항
 '==========================================================
 
 Public Class frmRouterMain
 
     'Program Ver ==========================================
-    Private Const Version As String = "0.00"    '2026.10.26 Ver 0.00 YSH
+    'Private Const Version As String = "0.00"    '2026.10.26 Ver 0.00 YSH        'Ver0.01 YSH DEL
+    Private Const Version As String = "0.01"    '2026.10.28 Ver 0.01 YSH : 설정 / 로그를 exe 위치와 분리 (C:\Barcode_Router\), exe 단독 실행
 
     Private Const OPERATOR_LEN As Integer = 8       '작업자 바코드 길이 (A8 / FAM3 frmMain 과 같은 판단)
     Private Const MSG_END As String = "END"         '검사 프로그램이 보내는 종료 신호 (구조설계 P-04)
     Private Const HINT_BUSY As String = "검사가 끝나면 이 화면이 다시 앞으로 옵니다"
 
-    Dim mAppPath As String = GetAppPath()       '기존 프로그램과 같이 bin 의 한 단계 위 (bin 밖에서 실행하면 실행 폴더)
+    'Dim mAppPath As String = GetAppPath()       '기존 프로그램과 같이 bin 의 한 단계 위 (bin 밖에서 실행하면 실행 폴더)     'Ver0.01 YSH DEL
+    Dim mAppPath As String = clsRouterPath.DataFolder   'Ver0.01 YSH ADD : 데이터 폴더 C:\Barcode_Router\ (실행 인수 /data: 로 변경). exe 위치와 무관 (공통 규약 Rev 1 7항)
     Dim mSetting As clsRouterSetting
     Dim mReaderPort As clsRouterPort                                        '바코드리더 COM (COM 모드일 때만)
     Dim mDestPorts As New Dictionary(Of Integer, clsRouterPort)             'DestID → 분기 대상 COM
@@ -58,6 +62,7 @@ Public Class frmRouterMain
         clsUiTheme.StyleButton(Button_Com, clsUiTheme.ButtonKind.Accent)
         Call UpdateReleaseButton()
         WriteLog("Program Start Ver " & Version)
+        WriteLog("Data Folder : " & mAppPath & "  (exe : " & Application.ExecutablePath & ")")     'Ver0.01 YSH ADD : 어느 폴더를 쓰는지 로그로 남김
 
         Call LoadAndOpen()
         Call SetReady()
@@ -80,6 +85,18 @@ Public Class frmRouterMain
         'Function : 설정 읽기 → 바코드리더 COM / 분기 대상 COM 열기
         '==========================================================================================
         Call CloseAllPorts()
+
+        'Ver0.01 YSH ADD Start : 설정 파일이 없으면 준비 (예전 위치에서 복사 → 없으면 빈 설정 새로 만듦)
+        Try
+            Dim prepared As String = clsRouterPath.PrepareSettingFile()
+            If prepared <> "" Then
+                WriteLog(prepared)
+                MessageBox.Show(prepared & vbCrLf & vbCrLf & "COM 설정 / 규칙 설정을 확인하세요.", "Barcode Router", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+        Catch ex As Exception
+            WriteLog("Setting Prepare NG : " & ex.Message)
+        End Try
+        'Ver0.01 YSH ADD End
 
         Try
             mSetting = New clsRouterSetting(mAppPath & "Files\RouterSetting.mdb")
