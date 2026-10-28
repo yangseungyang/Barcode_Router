@@ -120,11 +120,8 @@
     <None Include="App.config" />
     <None Include="Files\RouterSetting.mdb" />
   </ItemGroup>
-  <!-- Ver0.01 YSH ADD : exe 단독 실행용 내장 리소스 (빈 설정 MDB, EtherComN.dll) -->
+  <!-- exe 단독 실행용 내장 리소스 (EtherComN.dll) -->
   <ItemGroup>
-    <EmbeddedResource Include="Files\RouterSetting_Template.mdb">
-      <LogicalName>RouterSetting_Template.mdb</LogicalName>
-    </EmbeddedResource>
     <EmbeddedResource Include="Reference\EtherComN.dll">
       <LogicalName>EtherComN.dll</LogicalName>
     </EmbeddedResource>

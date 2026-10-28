@@ -1,12 +1,12 @@
-Option Strict On : Option Explicit On
+﻿Option Strict On : Option Explicit On
 '============================================================================================================================
 'Class Name : MyApplication (ApplicationEvents)
 'Function   : 프로그램 시작 처리 - exe 하나만 있어도 실행되도록 EtherComN.dll 을 exe 안에서 읽는다
 'Framwork   : VB2022 Framework4.8
 'Memo       : EtherComN.dll 이 exe 옆에 있으면 그 파일을 쓰고 (기존과 같음),
 '             없을 때만 AssemblyResolve 로 exe 에 넣어 둔 EtherComN.dll 을 읽는다
-'Issue      : 2026/10/28  Ver0.01    YSH       New Release
-'             근거 : Barcode_Router 연동 공통 규약.md Rev 1 7항 (exe 단독 실행)
+'Issue      : 2026/10/28  Rev 0.00    YSH       New Release
+'             근거 : Barcode_Router 연동 공통 규약.md 7항 (exe 단독 실행)
 '============================================================================================================================
 
 Namespace My
