@@ -96,7 +96,7 @@ Public Class frmRouterMain
         Try
             mSetting = New clsRouterSetting(mAppPath & "Files\RouterSetting.mdb")
             mSetting.Load()
-            WriteLog(clsLang.L("Setting Load OK : 분기 대상 ", "Setting Load OK : 分岐先 ") & mSetting.Destinations.Count & clsLang.L(" / 규칙 ", " / ルール ") & mSetting.Rules.Count)
+            WriteLog(clsLang.L("Setting Load OK : 분기 대상 ", "Setting Load OK : 分岐先 ") & mSetting.Destinations.Count & clsLang.L(" / 규칙 ", " / ルール ") & mSetting.Rules.Count & " (" & clsRouterSetting.ProviderName & ", " & If(Environment.Is64BitProcess, "64bit", "32bit") & ")")     '어느 MDB 엔진 / 몇 bit 로 읽었는지
         Catch ex As Exception
             WriteLog("Setting Load NG : " & ex.Message)
             MessageBox.Show(clsLang.L("설정을 읽지 못했습니다.", "設定を読めませんでした。") & vbCrLf & ex.Message, "Barcode Router", MessageBoxButtons.OK, MessageBoxIcon.Error)

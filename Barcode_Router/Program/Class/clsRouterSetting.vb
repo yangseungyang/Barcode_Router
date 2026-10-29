@@ -224,8 +224,45 @@ Public Class clsRouterSetting
         Return Fields.Where(Function(x) x.Enabled).OrderBy(Function(x) x.SortNo).ToList
     End Function
 
+    'MDB 엔진 (2026-10-29) : Router 는 32bit(x86) 로 빌드하고, Windows 에 기본으로 있는 Jet 을 먼저 쓴다
+    '  64bit 빌드는 Access Database Engine x64 가 설치된 PC 에서만 MDB 를 읽어서, 다른 PC 에서 '공급자 등록 안 됨' 오류가 났다
+    '  위에서부터 써 보고 등록된 첫 엔진을 쓴다 (FAM3 내전압 / CPU검사장치 검사 프로그램과 같은 Jet 방식)
+    Private Shared ReadOnly PROVIDERS() As String = {"Microsoft.Jet.OLEDB.4.0", "Microsoft.ACE.OLEDB.12.0", "Microsoft.ACE.OLEDB.16.0"}
+    Private Shared mProvider As String = ""
+
+    Public Shared ReadOnly Property ProviderName() As String
+        Get
+            Return mProvider
+        End Get
+    End Property
+
     Private Function Conn() As OleDbConnection
-        Return New OleDbConnection("Provider=Microsoft.ACE.OLEDB.12.0;Data Source=" & mDbPath)
+        If mProvider = "" Then mProvider = FindProvider(mDbPath)
+        Return New OleDbConnection("Provider=" & mProvider & ";Data Source=" & mDbPath)
+    End Function
+
+    Private Shared Function FindProvider(ByVal dbPath As String) As String
+        '==========================================================================================
+        'Function : 이 PC 에 등록된 MDB 엔진 찾기 (PROVIDERS 순서). 등록 안 됨(InvalidOperationException)이면 다음 것
+        '           파일 오류 등 다른 오류는 엔진은 있다는 뜻이므로 그 엔진을 쓴다 (오류는 실제로 읽을 때 그대로 나옴)
+        '==========================================================================================
+        Dim tried As New List(Of String)
+        For Each p As String In PROVIDERS
+            Try
+                Using cn As New OleDbConnection("Provider=" & p & ";Data Source=" & dbPath)
+                    cn.Open()
+                End Using
+                Return p
+            Catch ex As InvalidOperationException
+                tried.Add(p)                '이 PC 에 등록되지 않은 엔진
+            Catch
+                Return p
+            End Try
+        Next
+        Throw New ApplicationException(clsLang.L("MDB 엔진이 없습니다 (" & If(Environment.Is64BitProcess, "64bit", "32bit") & " 프로그램) : " & String.Join(", ", tried) & vbCrLf &
+                                                 "32bit 프로그램은 Windows 기본 Jet 엔진을 씁니다. Router 가 32bit(x86) 로 빌드되었는지 확인해 주세요.",
+                                                 "MDBエンジンがありません (" & If(Environment.Is64BitProcess, "64bit", "32bit") & " プログラム) : " & String.Join(", ", tried) & vbCrLf &
+                                                 "32bitプログラムはWindows標準のJetエンジンを使います。Routerが32bit(x86)でビルドされているか確認してください。"))
     End Function
 
     Private Shared Function S(ByVal v As Object) As String
