@@ -4,7 +4,9 @@
 'Function   : 분기 규칙 판단
 'Framwork   : VB2022 Framework4.8
 'Memo       : 판단 방법 (구조설계 R-04 ~ R-07, 10_확인항목 Q2 / Q3 제안대로 승인 2026-10-26)
-'             - MODEL = MSCODE 의 첫 '-' 앞부분 (예 : F3SP71-4S → F3SP71)
+'             - 조건의 대상은 tblField 의 항목 (2026-10-28 지시 : 받아오는 정보를 분기 규칙에서 모두 쓸 수 있게)
+'               값은 clsRouteData.BuildValues 로 만든 항목ID → 값. 없는 항목은 빈 값
+'               (MODEL 같은 항목도 tblField 의 DERIVE 설정으로 만든다 - 예 : MSCODE 를 '-' 로 나눈 1 번째)
 '             - 규칙은 우선순위가 작은 것부터 보고, 처음 맞는 규칙을 돌려준다 (사용 안 함 / 분기 대상 없는 규칙은 건너뜀)
 '             - 한 규칙 안의 조건 줄끼리는 줄마다 고른 연결(AND / OR)로 계산. AND 를 먼저 묶는다
 '               (예 : A AND B OR C = (A 그리고 B) 또는 C)  - 2026-10-26 지시로 AND 고정에서 변경
@@ -18,26 +20,18 @@
 
 Public Class clsRouteJudge
 
-    Public Shared Function GetModel(ByVal mscode As String) As String
-        Dim p As Integer = mscode.IndexOf("-"c)
-        If p < 0 Then Return mscode.Trim
-        Return mscode.Substring(0, p).Trim
-    End Function
-
-    Public Shared Function Judge(ByVal rules As List(Of clsRouteRule), ByVal mscode As String) As clsRouteRule
-        Dim model As String = GetModel(mscode)
-
+    Public Shared Function Judge(ByVal rules As List(Of clsRouteRule), ByVal values As Dictionary(Of String, String)) As clsRouteRule
         For Each ru As clsRouteRule In rules.OrderBy(Function(x) x.Priority).ThenBy(Function(x) x.RuleID)
             If Not ru.Enabled Then Continue For
             If ru.Conds.Count = 0 Then Continue For
 
-            If IsRuleMatch(ru, mscode, model) Then Return ru
+            If IsRuleMatch(ru, values) Then Return ru
         Next
 
         Return Nothing
     End Function
 
-    Public Shared Function IsRuleMatch(ByVal ru As clsRouteRule, ByVal mscode As String, ByVal model As String) As Boolean
+    Public Shared Function IsRuleMatch(ByVal ru As clsRouteRule, ByVal values As Dictionary(Of String, String)) As Boolean
         '==========================================================================================
         'Function : 조건 줄을 연결(AND / OR)대로 계산 - AND 를 먼저 묶고, OR 로 나뉜 묶음 중 하나라도 맞으면 True
         '           예 : A AND B OR C = (A 그리고 B) 또는 C
@@ -51,10 +45,11 @@ Public Class clsRouteJudge
             End If
             If Not groupOk Then Continue For        '이 묶음은 이미 틀림 - 다음 OR 까지 건너뜀
 
-            Dim target As String = If(c.Target = clsRuleCond.TARGET_MODEL, model, mscode)
+            Dim target As String = ""
+            If values IsNot Nothing Then values.TryGetValue(c.Target, target)
             Dim anyOk As Boolean = False
             For Each v As String In c.ValueList()
-                If IsMatch(target, c.Operator, v) Then anyOk = True : Exit For
+                If IsMatch(If(target, ""), c.Operator, v) Then anyOk = True : Exit For
             Next
             If Not anyOk Then groupOk = False
         Next

@@ -34,7 +34,7 @@ Partial Class frmComSetting
         Me.DataGridView_Dest = New System.Windows.Forms.DataGridView()
         Me.colID = New System.Windows.Forms.DataGridViewTextBoxColumn()
         Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn()
-        Me.colPort = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.colPort = New System.Windows.Forms.DataGridViewComboBoxColumn()
         Me.colSetting = New System.Windows.Forms.DataGridViewTextBoxColumn()
         Me.colProcess = New System.Windows.Forms.DataGridViewTextBoxColumn()
         Me.colTimeout = New System.Windows.Forms.DataGridViewTextBoxColumn()
@@ -205,6 +205,7 @@ Partial Class frmComSetting
         '
         Me.colPort.HeaderText = "COM"
         Me.colPort.Name = "colPort"
+        Me.colPort.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         Me.colPort.Width = 80
         '
         'colSetting
@@ -333,7 +334,7 @@ Partial Class frmComSetting
     Friend WithEvents DataGridView_Dest As System.Windows.Forms.DataGridView
     Friend WithEvents colID As System.Windows.Forms.DataGridViewTextBoxColumn
     Friend WithEvents colName As System.Windows.Forms.DataGridViewTextBoxColumn
-    Friend WithEvents colPort As System.Windows.Forms.DataGridViewTextBoxColumn
+    Friend WithEvents colPort As System.Windows.Forms.DataGridViewComboBoxColumn
     Friend WithEvents colSetting As System.Windows.Forms.DataGridViewTextBoxColumn
     Friend WithEvents colProcess As System.Windows.Forms.DataGridViewTextBoxColumn
     Friend WithEvents colTimeout As System.Windows.Forms.DataGridViewTextBoxColumn

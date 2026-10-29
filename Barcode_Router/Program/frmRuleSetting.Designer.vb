@@ -381,7 +381,7 @@ Partial Class frmRuleSetting
         Me.Label_TestResult.Location = New System.Drawing.Point(362, 12)
         Me.Label_TestResult.Name = "Label_TestResult"
         Me.Label_TestResult.Size = New System.Drawing.Size(498, 26)
-        Me.Label_TestResult.Text = "MSCODE 를 넣고 시험 (저장 전 화면 기준, PLASMA 조회 없음)"
+        Me.Label_TestResult.Text = "항목ID=값; 항목ID=값  (= 없으면 고른 조건 줄 항목)"
         Me.Label_TestResult.ForeColor = System.Drawing.Color.FromArgb(CType(CType(95, Byte), Integer), CType(CType(94, Byte), Integer), CType(CType(90, Byte), Integer))
         Me.Label_TestResult.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
         '

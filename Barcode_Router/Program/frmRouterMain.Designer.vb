@@ -38,18 +38,9 @@ Partial Class frmRouterMain
         Me.Label_InputMode = New System.Windows.Forms.Label()
         Me.TextBox_BarCode = New System.Windows.Forms.TextBox()
         Me.Label_ScanIcon = New System.Windows.Forms.Label()
-        Me.Panel_Card1 = New System.Windows.Forms.Panel()
-        Me.Label_MSCODE = New System.Windows.Forms.Label()
-        Me.Label_MSCODECap = New System.Windows.Forms.Label()
-        Me.Panel_Card2 = New System.Windows.Forms.Panel()
-        Me.Label_MODEL = New System.Windows.Forms.Label()
-        Me.Label_MODELCap = New System.Windows.Forms.Label()
-        Me.Panel_Card3 = New System.Windows.Forms.Panel()
-        Me.Label_SERIAL = New System.Windows.Forms.Label()
-        Me.Label_SERIALCap = New System.Windows.Forms.Label()
-        Me.Panel_Card4 = New System.Windows.Forms.Panel()
-        Me.Label_Rule = New System.Windows.Forms.Label()
-        Me.Label_RuleCap = New System.Windows.Forms.Label()
+        Me.FlowLayoutPanel_Cards = New System.Windows.Forms.FlowLayoutPanel()
+        Me.Button_Manual = New System.Windows.Forms.Button()
+        Me.Button_Display = New System.Windows.Forms.Button()
         Me.Label_DestCap = New System.Windows.Forms.Label()
         Me.FlowLayoutPanel_Dest = New System.Windows.Forms.FlowLayoutPanel()
         Me.Label_LogCap = New System.Windows.Forms.Label()
@@ -63,15 +54,12 @@ Partial Class frmRouterMain
         Me.Panel_Status.SuspendLayout()
         Me.Panel_BarCodeBorder.SuspendLayout()
         Me.Panel_BarCode.SuspendLayout()
-        Me.Panel_Card1.SuspendLayout()
-        Me.Panel_Card2.SuspendLayout()
-        Me.Panel_Card3.SuspendLayout()
-        Me.Panel_Card4.SuspendLayout()
         Me.SuspendLayout()
         '
         'Panel_Header
         '
         Me.Panel_Header.BackColor = System.Drawing.Color.FromArgb(CType(CType(12, Byte), Integer), CType(CType(68, Byte), Integer), CType(CType(124, Byte), Integer))
+        Me.Panel_Header.Controls.Add(Me.Button_Manual)
         Me.Panel_Header.Controls.Add(Me.Label_Equipment)
         Me.Panel_Header.Controls.Add(Me.Label_HeaderInfo)
         Me.Panel_Header.Controls.Add(Me.Label_Ver)
@@ -103,9 +91,9 @@ Partial Class frmRouterMain
         '
         Me.Label_HeaderInfo.Font = New System.Drawing.Font("맑은 고딕", 9.0!)
         Me.Label_HeaderInfo.ForeColor = System.Drawing.Color.FromArgb(CType(CType(181, Byte), Integer), CType(CType(212, Byte), Integer), CType(CType(244, Byte), Integer))
-        Me.Label_HeaderInfo.Location = New System.Drawing.Point(636, 14)
+        Me.Label_HeaderInfo.Location = New System.Drawing.Point(556, 14)
         Me.Label_HeaderInfo.Name = "Label_HeaderInfo"
-        Me.Label_HeaderInfo.Size = New System.Drawing.Size(250, 20)
+        Me.Label_HeaderInfo.Size = New System.Drawing.Size(240, 20)
         Me.Label_HeaderInfo.Text = "작업자 - · 2026-10-26 00:00"
         Me.Label_HeaderInfo.TextAlign = System.Drawing.ContentAlignment.MiddleRight
         '
@@ -115,11 +103,20 @@ Partial Class frmRouterMain
         Me.Label_Equipment.BackColor = System.Drawing.Color.FromArgb(CType(CType(24, Byte), Integer), CType(CType(95, Byte), Integer), CType(CType(165, Byte), Integer))
         Me.Label_Equipment.Font = New System.Drawing.Font("맑은 고딕", 13.0!, System.Drawing.FontStyle.Bold)
         Me.Label_Equipment.ForeColor = System.Drawing.Color.White
-        Me.Label_Equipment.Location = New System.Drawing.Point(290, 7)
+        Me.Label_Equipment.Location = New System.Drawing.Point(262, 7)
         Me.Label_Equipment.Name = "Label_Equipment"
-        Me.Label_Equipment.Size = New System.Drawing.Size(320, 34)
+        Me.Label_Equipment.Size = New System.Drawing.Size(290, 34)
         Me.Label_Equipment.Text = "설비명"
         Me.Label_Equipment.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
+        '
+        'Button_Manual (사용자 설명서 - 제목줄 오른쪽)
+        '
+        Me.Button_Manual.Font = New System.Drawing.Font("맑은 고딕", 9.5!, System.Drawing.FontStyle.Bold)
+        Me.Button_Manual.Location = New System.Drawing.Point(804, 9)
+        Me.Button_Manual.Name = "Button_Manual"
+        Me.Button_Manual.Size = New System.Drawing.Size(84, 30)
+        Me.Button_Manual.TabStop = False
+        Me.Button_Manual.Text = "ⓘ 설명서"
         '
         'Panel_StatusBorder
         '
@@ -214,79 +211,12 @@ Partial Class frmRouterMain
         Me.Label_InputMode.Text = "HID 입력"
         Me.Label_InputMode.TextAlign = System.Drawing.ContentAlignment.MiddleRight
         '
-        'Panel_Card1 ~ 4 (제품 정보 카드)
+        'FlowLayoutPanel_Cards (제품 정보 카드 - tblCard 설정대로 코드에서 만든다)
         '
-        Me.Panel_Card1.BackColor = System.Drawing.Color.FromArgb(CType(CType(241, Byte), Integer), CType(CType(239, Byte), Integer), CType(CType(232, Byte), Integer))
-        Me.Panel_Card1.Controls.Add(Me.Label_MSCODE)
-        Me.Panel_Card1.Controls.Add(Me.Label_MSCODECap)
-        Me.Panel_Card1.Location = New System.Drawing.Point(14, 248)
-        Me.Panel_Card1.Name = "Panel_Card1"
-        Me.Panel_Card1.Size = New System.Drawing.Size(212, 58)
-        Me.Panel_Card2.BackColor = System.Drawing.Color.FromArgb(CType(CType(241, Byte), Integer), CType(CType(239, Byte), Integer), CType(CType(232, Byte), Integer))
-        Me.Panel_Card2.Controls.Add(Me.Label_MODEL)
-        Me.Panel_Card2.Controls.Add(Me.Label_MODELCap)
-        Me.Panel_Card2.Location = New System.Drawing.Point(234, 248)
-        Me.Panel_Card2.Name = "Panel_Card2"
-        Me.Panel_Card2.Size = New System.Drawing.Size(212, 58)
-        Me.Panel_Card3.BackColor = System.Drawing.Color.FromArgb(CType(CType(241, Byte), Integer), CType(CType(239, Byte), Integer), CType(CType(232, Byte), Integer))
-        Me.Panel_Card3.Controls.Add(Me.Label_SERIAL)
-        Me.Panel_Card3.Controls.Add(Me.Label_SERIALCap)
-        Me.Panel_Card3.Location = New System.Drawing.Point(454, 248)
-        Me.Panel_Card3.Name = "Panel_Card3"
-        Me.Panel_Card3.Size = New System.Drawing.Size(212, 58)
-        Me.Panel_Card4.BackColor = System.Drawing.Color.FromArgb(CType(CType(241, Byte), Integer), CType(CType(239, Byte), Integer), CType(CType(232, Byte), Integer))
-        Me.Panel_Card4.Controls.Add(Me.Label_Rule)
-        Me.Panel_Card4.Controls.Add(Me.Label_RuleCap)
-        Me.Panel_Card4.Location = New System.Drawing.Point(674, 248)
-        Me.Panel_Card4.Name = "Panel_Card4"
-        Me.Panel_Card4.Size = New System.Drawing.Size(212, 58)
-        '
-        'Card caption / value labels
-        '
-        Me.Label_MSCODECap.Font = New System.Drawing.Font("맑은 고딕", 8.5!)
-        Me.Label_MSCODECap.ForeColor = System.Drawing.Color.FromArgb(CType(CType(95, Byte), Integer), CType(CType(94, Byte), Integer), CType(CType(90, Byte), Integer))
-        Me.Label_MSCODECap.Location = New System.Drawing.Point(10, 6)
-        Me.Label_MSCODECap.Name = "Label_MSCODECap"
-        Me.Label_MSCODECap.Size = New System.Drawing.Size(190, 18)
-        Me.Label_MSCODECap.Text = "MSCODE"
-        Me.Label_MSCODE.AutoEllipsis = True
-        Me.Label_MSCODE.Font = New System.Drawing.Font("맑은 고딕", 12.0!, System.Drawing.FontStyle.Bold)
-        Me.Label_MSCODE.Location = New System.Drawing.Point(10, 26)
-        Me.Label_MSCODE.Name = "Label_MSCODE"
-        Me.Label_MSCODE.Size = New System.Drawing.Size(196, 26)
-        Me.Label_MODELCap.Font = New System.Drawing.Font("맑은 고딕", 8.5!)
-        Me.Label_MODELCap.ForeColor = System.Drawing.Color.FromArgb(CType(CType(95, Byte), Integer), CType(CType(94, Byte), Integer), CType(CType(90, Byte), Integer))
-        Me.Label_MODELCap.Location = New System.Drawing.Point(10, 6)
-        Me.Label_MODELCap.Name = "Label_MODELCap"
-        Me.Label_MODELCap.Size = New System.Drawing.Size(190, 18)
-        Me.Label_MODELCap.Text = "MODEL"
-        Me.Label_MODEL.AutoEllipsis = True
-        Me.Label_MODEL.Font = New System.Drawing.Font("맑은 고딕", 12.0!, System.Drawing.FontStyle.Bold)
-        Me.Label_MODEL.Location = New System.Drawing.Point(10, 26)
-        Me.Label_MODEL.Name = "Label_MODEL"
-        Me.Label_MODEL.Size = New System.Drawing.Size(196, 26)
-        Me.Label_SERIALCap.Font = New System.Drawing.Font("맑은 고딕", 8.5!)
-        Me.Label_SERIALCap.ForeColor = System.Drawing.Color.FromArgb(CType(CType(95, Byte), Integer), CType(CType(94, Byte), Integer), CType(CType(90, Byte), Integer))
-        Me.Label_SERIALCap.Location = New System.Drawing.Point(10, 6)
-        Me.Label_SERIALCap.Name = "Label_SERIALCap"
-        Me.Label_SERIALCap.Size = New System.Drawing.Size(190, 18)
-        Me.Label_SERIALCap.Text = "SERIAL"
-        Me.Label_SERIAL.AutoEllipsis = True
-        Me.Label_SERIAL.Font = New System.Drawing.Font("맑은 고딕", 12.0!, System.Drawing.FontStyle.Bold)
-        Me.Label_SERIAL.Location = New System.Drawing.Point(10, 26)
-        Me.Label_SERIAL.Name = "Label_SERIAL"
-        Me.Label_SERIAL.Size = New System.Drawing.Size(196, 26)
-        Me.Label_RuleCap.Font = New System.Drawing.Font("맑은 고딕", 8.5!)
-        Me.Label_RuleCap.ForeColor = System.Drawing.Color.FromArgb(CType(CType(95, Byte), Integer), CType(CType(94, Byte), Integer), CType(CType(90, Byte), Integer))
-        Me.Label_RuleCap.Location = New System.Drawing.Point(10, 6)
-        Me.Label_RuleCap.Name = "Label_RuleCap"
-        Me.Label_RuleCap.Size = New System.Drawing.Size(190, 18)
-        Me.Label_RuleCap.Text = "분기 규칙"
-        Me.Label_Rule.AutoEllipsis = True
-        Me.Label_Rule.Font = New System.Drawing.Font("맑은 고딕", 11.0!, System.Drawing.FontStyle.Bold)
-        Me.Label_Rule.Location = New System.Drawing.Point(10, 26)
-        Me.Label_Rule.Name = "Label_Rule"
-        Me.Label_Rule.Size = New System.Drawing.Size(196, 26)
+        Me.FlowLayoutPanel_Cards.Location = New System.Drawing.Point(14, 248)
+        Me.FlowLayoutPanel_Cards.Name = "FlowLayoutPanel_Cards"
+        Me.FlowLayoutPanel_Cards.Size = New System.Drawing.Size(880, 58)
+        Me.FlowLayoutPanel_Cards.Margin = New System.Windows.Forms.Padding(0)
         '
         'Label_DestCap
         '
@@ -346,6 +276,15 @@ Partial Class frmRouterMain
         Me.Button_Com.TabStop = False
         Me.Button_Com.Text = "⇄  COM 설정"
         '
+        'Button_Display (화면 설정 : 항목 / 카드 / 바코드 종류 / 기타, 설정 내보내기 / 가져오기)
+        '
+        Me.Button_Display.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
+        Me.Button_Display.Location = New System.Drawing.Point(350, 632)
+        Me.Button_Display.Name = "Button_Display"
+        Me.Button_Display.Size = New System.Drawing.Size(150, 42)
+        Me.Button_Display.TabStop = False
+        Me.Button_Display.Text = "⚙  화면 설정"
+        '
         'Button_Release
         '
         Me.Button_Release.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
@@ -372,10 +311,8 @@ Partial Class frmRouterMain
         Me.Controls.Add(Me.Label_LogCap)
         Me.Controls.Add(Me.FlowLayoutPanel_Dest)
         Me.Controls.Add(Me.Label_DestCap)
-        Me.Controls.Add(Me.Panel_Card4)
-        Me.Controls.Add(Me.Panel_Card3)
-        Me.Controls.Add(Me.Panel_Card2)
-        Me.Controls.Add(Me.Panel_Card1)
+        Me.Controls.Add(Me.FlowLayoutPanel_Cards)
+        Me.Controls.Add(Me.Button_Display)
         Me.Controls.Add(Me.Panel_BarCodeBorder)
         Me.Controls.Add(Me.Panel_StatusBorder)
         Me.Controls.Add(Me.Panel_Header)
@@ -393,10 +330,6 @@ Partial Class frmRouterMain
         Me.Panel_BarCodeBorder.ResumeLayout(False)
         Me.Panel_BarCode.ResumeLayout(False)
         Me.Panel_BarCode.PerformLayout()
-        Me.Panel_Card1.ResumeLayout(False)
-        Me.Panel_Card2.ResumeLayout(False)
-        Me.Panel_Card3.ResumeLayout(False)
-        Me.Panel_Card4.ResumeLayout(False)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -417,18 +350,9 @@ Partial Class frmRouterMain
     Friend WithEvents Label_ScanIcon As System.Windows.Forms.Label
     Friend WithEvents TextBox_BarCode As System.Windows.Forms.TextBox
     Friend WithEvents Label_InputMode As System.Windows.Forms.Label
-    Friend WithEvents Panel_Card1 As System.Windows.Forms.Panel
-    Friend WithEvents Label_MSCODECap As System.Windows.Forms.Label
-    Friend WithEvents Label_MSCODE As System.Windows.Forms.Label
-    Friend WithEvents Panel_Card2 As System.Windows.Forms.Panel
-    Friend WithEvents Label_MODELCap As System.Windows.Forms.Label
-    Friend WithEvents Label_MODEL As System.Windows.Forms.Label
-    Friend WithEvents Panel_Card3 As System.Windows.Forms.Panel
-    Friend WithEvents Label_SERIALCap As System.Windows.Forms.Label
-    Friend WithEvents Label_SERIAL As System.Windows.Forms.Label
-    Friend WithEvents Panel_Card4 As System.Windows.Forms.Panel
-    Friend WithEvents Label_RuleCap As System.Windows.Forms.Label
-    Friend WithEvents Label_Rule As System.Windows.Forms.Label
+    Friend WithEvents FlowLayoutPanel_Cards As System.Windows.Forms.FlowLayoutPanel
+    Friend WithEvents Button_Manual As System.Windows.Forms.Button
+    Friend WithEvents Button_Display As System.Windows.Forms.Button
     Friend WithEvents Label_DestCap As System.Windows.Forms.Label
     Friend WithEvents FlowLayoutPanel_Dest As System.Windows.Forms.FlowLayoutPanel
     Friend WithEvents Label_LogCap As System.Windows.Forms.Label

@@ -83,6 +83,9 @@
     <Compile Include="Program\Class\clsRouterLog.vb" />
     <Compile Include="Program\Class\clsRouterPath.vb" />
     <Compile Include="Program\Class\clsRouterSetting.vb" />
+    <Compile Include="Program\Class\clsComChoices.vb" />
+    <Compile Include="Program\Class\clsLang.vb" />
+    <Compile Include="Program\Class\clsRouteData.vb" />
     <Compile Include="Program\Class\clsRouteJudge.vb" />
     <Compile Include="Program\Class\clsRouterPort.vb" />
     <Compile Include="Program\Class\clsWindowControl.vb" />
@@ -107,6 +110,9 @@
     </Compile>
     <Compile Include="Program\frmComSetting.Designer.vb">
       <DependentUpon>frmComSetting.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Program\frmDisplaySetting.vb">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Program\frmComSetting.vb">
       <SubType>Form</SubType>

@@ -60,6 +60,44 @@ Public Class clsUiTheme
         Return c
     End Function
 
+    '글꼴 ===================================================================================================================
+    '  tblConfig UiFont (2026-10-28) : 한국어 / 일본어 Windows 에 따라 있는 글꼴이 다를 수 있어 설정으로 고른다
+    '  비어 있으면 언어(clsLang, 한국어 / 일본어 PC)에 맞는 글꼴, PC 에 없는 글꼴이면 Windows 기본 글꼴
+    Private Shared mFontName As String = ""
+
+    Public Shared Sub SetFontName(ByVal name As String)
+        '설정 글꼴(tblConfig UiFont) → 비어 있으면 언어 글꼴(clsLang.LanguageFont) → PC 에 없으면 Windows 기본 글꼴
+        Dim want As String = If(name Is Nothing OrElse name.Trim = "", clsLang.LanguageFont(), name.Trim)
+        Try
+            Using ff As New FontFamily(want)        '없는 글꼴이면 예외
+                mFontName = ff.Name
+            End Using
+        Catch
+            mFontName = SystemFonts.MessageBoxFont.Name
+        End Try
+    End Sub
+
+    Public Shared ReadOnly Property FontName() As String
+        Get
+            Return If(mFontName = "", SystemFonts.MessageBoxFont.Name, mFontName)
+        End Get
+    End Property
+
+    Public Shared Function UiFont(ByVal size As Single, Optional ByVal style As FontStyle = FontStyle.Regular) As Font
+        Return New Font(FontName, size, style)
+    End Function
+
+    Public Shared Sub ApplyFont(ByVal root As Control)
+        '==========================================================================================
+        'Function : 화면의 모든 컨트롤 글꼴을 설정한 글꼴로 바꾼다 (크기 / 굵기는 그대로). 설정이 없으면 아무것도 안 함
+        '==========================================================================================
+        If mFontName = "" Then Exit Sub
+        If root.Font.Name <> mFontName Then root.Font = New Font(mFontName, root.Font.Size, root.Font.Style)
+        For Each c As Control In root.Controls
+            Call ApplyFont(c)
+        Next
+    End Sub
+
     '버튼 ===================================================================================================================
     Public Enum ButtonKind
         Normal      '흰 바탕 회색 테두리
@@ -104,11 +142,11 @@ Public Class clsUiTheme
         g.ColumnHeadersDefaultCellStyle.BackColor = CardBack
         g.ColumnHeadersDefaultCellStyle.ForeColor = TextSub
         g.ColumnHeadersDefaultCellStyle.SelectionBackColor = CardBack
-        g.ColumnHeadersDefaultCellStyle.Font = New Font("맑은 고딕", 9.0!)
+        g.ColumnHeadersDefaultCellStyle.Font = UiFont(9.0!)
         g.ColumnHeadersDefaultCellStyle.Padding = New Padding(4, 4, 4, 4)
         g.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing
         g.ColumnHeadersHeight = 30
-        g.DefaultCellStyle.Font = New Font("맑은 고딕", 10.0!)
+        g.DefaultCellStyle.Font = UiFont(10.0!)
         g.DefaultCellStyle.ForeColor = TextMain
         g.DefaultCellStyle.SelectionBackColor = SelectBack
         g.DefaultCellStyle.SelectionForeColor = SelectText

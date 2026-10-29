@@ -5,8 +5,8 @@
 'Framwork   : VB2022 Framework4.8
 'Memo       : 통신 규약 (구조설계 5_통신규약)
 '             - 9600-N-8-1 형식의 통신설정, 종단 CR (FAM3 cls101_ComRS232C 기존 설정과 같음)
-'             - 송신 : 문자열 + CR
-'             - 수신 : CR 까지 모아서 한 줄이 되면 LineReceived 이벤트 (수신 스레드에서 발생하므로 화면은 Invoke 로 처리)
+'             - 송신 : 문자열 + 끝 문자 (분기 대상별 설정 CR / LF / CRLF, 2026-10-28 - CPU검사장치 A8 은 LF 가 필요)
+'             - 수신 : CR 또는 LF 까지 모아서 한 줄이 되면 LineReceived 이벤트 (수신 스레드에서 발생하므로 화면은 Invoke 로 처리)
 'Issue      : 2026/10/26  Rev 0.00    YSH       New Release
 '             근거 : FAM3 증산 대응_내전압 설비 ADD-ON.md Rev 3  7-4항, 7-9항, 7-10항
 '============================================================================================================================
@@ -38,7 +38,7 @@ Public Class clsRouterPort
         'Function : 포트 열기   setting 예 : 9600-N-8-1
         '==========================================================================================
         Dim ps() As String = setting.Trim.Split("-"c)
-        If ps.Length < 4 Then Throw New ApplicationException("통신설정 형식이 잘못되었습니다 (예 : 9600-N-8-1) : " & setting)
+        If ps.Length < 4 Then Throw New ApplicationException(clsLang.L("통신설정 형식이 잘못되었습니다 (예 : 9600-N-8-1) : ", "通信設定の形式が正しくありません (例 : 9600-N-8-1) : ") & setting)
 
         Close()
         mPort.PortName = portName.Trim
@@ -76,9 +76,9 @@ Public Class clsRouterPort
         End Try
     End Sub
 
-    Public Sub SendLine(ByVal data As String)
-        If Not mPort.IsOpen Then Throw New ApplicationException(mPort.PortName & " 포트가 열려 있지 않습니다.")
-        mPort.Write(data & vbCr)
+    Public Sub SendLine(ByVal data As String, ByVal lineEnd As String)
+        If Not mPort.IsOpen Then Throw New ApplicationException(mPort.PortName & clsLang.L(" 포트가 열려 있지 않습니다.", " ポートが開いていません。"))
+        mPort.Write(data & lineEnd)
     End Sub
 
     Private Sub mPort_DataReceived(ByVal sender As Object, ByVal e As IO.Ports.SerialDataReceivedEventArgs) Handles mPort.DataReceived
@@ -88,9 +88,9 @@ Public Class clsRouterPort
                 mBuf.Append(mPort.ReadExisting())
                 Do
                     Dim s As String = mBuf.ToString
-                    Dim p As Integer = s.IndexOf(vbCr)
+                    Dim p As Integer = s.IndexOfAny(New Char() {CChar(vbCr), CChar(vbLf)})     'CR / LF / CRLF 어느 것이든 한 줄 (CRLF 의 LF 는 빈 줄이 되어 버려진다)
                     If p < 0 Then Exit Do
-                    lines.Add(s.Substring(0, p).Replace(vbLf, "").Trim)
+                    lines.Add(s.Substring(0, p).Trim)
                     mBuf.Remove(0, p + 1)
                 Loop
             End SyncLock

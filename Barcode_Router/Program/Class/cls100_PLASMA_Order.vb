@@ -1,4 +1,4 @@
-Option Strict On : Option Explicit On
+ï»¿Option Strict On : Option Explicit On
 '================================================================================================================================
 'Class Name : cls100_PLASMA_Order
 'Function   : Get order information from PLASMA server 
@@ -9,6 +9,8 @@ Option Strict On : Option Explicit On
 'Issue      : 
 '================================================================================================================================
 
+'Barcode_Router : ì›ë³¸ì€ Shift-JIS íŒŒì¼. BOM ì—†ëŠ” Shift-JIS ëŠ” ë¹Œë“œí•˜ëŠ” PC ì˜ Windows ì–¸ì–´(í•œêµ­ì–´ 949 / ì¼ë³¸ì–´ 932)ì— ë”°ë¼
+'                 ì¼ë³¸ì–´ ë¬¸êµ¬ê°€ ë‹¤ë¥´ê²Œ ì½í˜€ ì˜¤ë¥˜ ë©”ì‹œì§€ê°€ ê¹¨ì§€ë¯€ë¡œ UTF-8(BOM) ìœ¼ë¡œ ë°”ê¿” ì €ìž¥í•¨ (2026-10-28)
 Public Class cls100_PLASMA_Order
 
     'Private EtherComDll_definst As New EtherCom.Dll       'Ver 0.08 JDI DEL
@@ -17,6 +19,10 @@ Public Class cls100_PLASMA_Order
     'Local ================================================
     Dim mPlasmaIndex As String
     Dim mPlasmaResult As String
+    Dim mHost1 As String = ""           'Barcode_Router : PLASMA server (tblConfig, 2026-10-28)
+    Dim mHost2 As String = ""
+    Dim mPort As Integer = 0
+    Dim mCommand As String = ""
 
     'Local Property =======================================
     Dim mBarCodeText As String
@@ -31,6 +37,16 @@ Public Class cls100_PLASMA_Order
 
     'Property =====================================================================================
     'Bar code -------------------------
+    'Barcode_Router : PLASMA server setting / raw response (2026-10-28) ---------------------------------------
+    Public Sub SetServer(ByVal host1 As String, ByVal host2 As String, ByVal port As Integer, ByVal command As String)
+        mHost1 = If(host1, "").Trim : mHost2 = If(host2, "").Trim : mPort = port : mCommand = If(command, "")
+    End Sub
+    Public ReadOnly Property RAW_DATA() As String       'PLASMA raw response ($TAG value $TAG value ...)
+        Get
+            Return mPlasmaResult
+        End Get
+    End Property
+    '-------------------------------------------------------------------------------------------------------
     Public WriteOnly Property BARCODE_TEXT() As String
         Set(ByVal Value As String)
             mBarCodeText = Value
@@ -308,7 +324,7 @@ Public Class cls100_PLASMA_Order
             mPlasmaIndex = String10Word
 
             If mPlasmaIndex = "0000000000" Then
-                mErrorComment = "ƒo-ƒR-ƒhiIndexj‚ªˆÙí‚Å‚·BF0000000000"
+                mErrorComment = "ãƒ-ã‚³-ãƒ‰ï¼ˆIndexï¼‰ãŒç•°å¸¸ã§ã™ã€‚ï¼š0000000000"
                 Throw New ApplicationException(mErrorComment)
             End If
 
@@ -332,33 +348,35 @@ Public Class cls100_PLASMA_Order
         '==========================================================================================
 
         Try
-            mPlasmaResult = EtherComN.ComHost("10.7.15.254", "10.7.15.140", 2031, "PLAL-" & mPlasmaIndex)
+            'Barcode_Router : PLASMA server from RouterSetting.mdb > tblConfig. No query when not set (2026-10-28)
+            If mHost1 = "" OrElse mHost2 = "" OrElse mPort <= 0 Then Throw New ApplicationException("PLASMA server not set (tblConfig : PlasmaHost1 / PlasmaHost2 / PlasmaPort / PlasmaCommand)")
+            mPlasmaResult = EtherComN.ComHost(mHost1, mHost2, mPort, mCommand & mPlasmaIndex)
 
             Debug.Print(mPlasmaResult)
 
             'For Debug 
-            'mPlasmaResult = "$MS_CODEYZ16-9P/BB2$MODELYZ19$PROD_NO10000N4007247$PROD_NO_SFIX001$LINE_NO100L13$CRP_GR_NO100L1310$PROD_CAREERS1$INDEX_NO0133125101$TEST_CERT_SIGN0$DOC_LANG_TYPE0$INST_FINISH_D2013/04/26$TEST_CERT_YN0$END_USER_CUST_N_JŠ”Ž®‰ïŽÐ ƒGƒjƒCƒƒCƒ„$ORDER_NO2000846850$ITEM_NO000010$PROD_ITEM_REV_NO000$PROD_INST_REV_NO001$SALES_NO0010$SHIPMENT_NO0000$ORD_QTY4$COMP_NO0001$START_SCHDULE_D2013/04/25$FINISH_SCHDULE_D2013/04/26$ALLOWANCE_SIGN0$PROD_N_JI/OƒI?ƒvƒ“ASICiFA-M3—pj$PROD_N_EI/O Open ASIC for FA-M3$TOKUCHU_NOAND01313-01-00$TOKUCHU_SPEC_SIGN0$SAP_LINKAGE_NO2000846850000010"
+            'mPlasmaResult = "$MS_CODEYZ16-9P/BB2$MODELYZ19$PROD_NO10000N4007247$PROD_NO_SFIX001$LINE_NO100L13$CRP_GR_NO100L1310$PROD_CAREERS1$INDEX_NO0133125101$TEST_CERT_SIGN0$DOC_LANG_TYPE0$INST_FINISH_D2013/04/26$TEST_CERT_YN0$END_USER_CUST_N_Jæ ªå¼ä¼šç¤¾ ã‚¨ãƒ‹ã‚¤ãƒ¯ã‚¤ãƒ¤$ORDER_NO2000846850$ITEM_NO000010$PROD_ITEM_REV_NO000$PROD_INST_REV_NO001$SALES_NO0010$SHIPMENT_NO0000$ORD_QTY4$COMP_NO0001$START_SCHDULE_D2013/04/25$FINISH_SCHDULE_D2013/04/26$ALLOWANCE_SIGN0$PROD_N_JI/Oã‚ª?ãƒ—ãƒ³ASICï¼ˆFA-M3ç”¨ï¼‰$PROD_N_EI/O Open ASIC for FA-M3$TOKUCHU_NOAND01313-01-00$TOKUCHU_SPEC_SIGN0$SAP_LINKAGE_NO2000846850000010"
 
 
             Select Case Left(mPlasmaResult, 8)
                 Case "ERROR:A0"
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "¶ŽYî•ñ‚ª‚ ‚è‚Ü‚¹‚ñB‚±‚Ìƒo-ƒR-ƒh‚Í–³Œø‚Å‚·B"
+                    mErrorComment = "ç”Ÿç”£æƒ…å ±ãŒã‚ã‚Šã¾ã›ã‚“ã€‚ã“ã®ãƒ-ã‚³-ãƒ‰ã¯ç„¡åŠ¹ã§ã™ã€‚"
                 Case "ERROR:A1"
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "¶ŽYî•ñ‚ª·¬Ý¾-³EÄ‚¢E·B–³Œø‚Ì’…HŽD‚Å‚·B"
+                    mErrorComment = "ç”Ÿç”£æƒ…å ±ãŒï½·ï½¬ï¾ï½¾-ï½³ãƒ»ï¾„ã„ãƒ»ï½·ã€‚ç„¡åŠ¹ã®ç€å·¥æœ­ã§ã™ã€‚"
                 Case "ERROR:A2" : Case "ERROR:A3" : Case "ERROR:A4"
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "ƒvƒƒOƒ‰ƒ€ ƒGƒ‰[‚Å‚·B"
+                    mErrorComment = "ãƒ—ãƒ­ã‚°ãƒ©ãƒ  ã‚¨ãƒ©ãƒ¼ã§ã™ã€‚"
                 Case "ERROR:A5"
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "‚n‚q‚`‚b‚k‚dƒGƒ‰[‚Å‚·B"
+                    mErrorComment = "ï¼¯ï¼²ï¼¡ï¼£ï¼¬ï¼¥ã‚¨ãƒ©ãƒ¼ã§ã™ã€‚"
                 Case "ERROR:13"
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "ƒ^ƒCƒ€ƒAƒEƒgƒGƒ‰[‚Å‚·B"
+                    mErrorComment = "ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆã‚¨ãƒ©ãƒ¼ã§ã™ã€‚"
                 Case ""
                     mErrorCode = mPlasmaResult
-                    mErrorComment = "ƒf[ƒ^‚ª‚ ‚è‚Ü‚¹‚ñB"
+                    mErrorComment = "ãƒ‡ãƒ¼ã‚¿ãŒã‚ã‚Šã¾ã›ã‚“ã€‚"
             End Select
             If mErrorCode <> "" Then Throw New ApplicationException(mErrorComment)
 
