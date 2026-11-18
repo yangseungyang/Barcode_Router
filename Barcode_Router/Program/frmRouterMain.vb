@@ -62,6 +62,7 @@ Public Class frmRouterMain
         clsUiTheme.StyleButton(Button_Rule, clsUiTheme.ButtonKind.Accent)
         clsUiTheme.StyleButton(Button_Com, clsUiTheme.ButtonKind.Accent)
         clsUiTheme.StyleButton(Button_Display, clsUiTheme.ButtonKind.Accent)
+        clsUiTheme.StyleButton(Button_Guide, clsUiTheme.ButtonKind.Accent)
         clsUiTheme.StyleButton(Button_Manual, clsUiTheme.ButtonKind.Accent)
         Call UpdateReleaseButton()
         WriteLog("Program Start Ver " & Version)
@@ -459,6 +460,17 @@ Public Class frmRouterMain
         Call SetReady()                 '설정을 바꾼 뒤 상태 패널 / 바코드 칸을 대기로 (언어가 바뀌었을 수 있음)
     End Sub
 
+    Private Sub Button_Guide_Click(ByVal sender As Object, ByVal e As EventArgs) Handles Button_Guide.Click
+        '==========================================================================================
+        'Function : 연동 가이드 (검사 프로그램을 Router 에 붙이는 순서 - 가상 COM / RouterLink.mdb / clsRouterLink.vb / 코드 / 등록 / 확인)
+        'Remarks  : ⑤ 단계의 버튼은 메인 화면의 COM 설정 / 분기 조건 설정과 같은 처리를 한다 (포트 닫기 → 설정 → 다시 읽기)
+        '==========================================================================================
+        Using f As New frmLinkGuide(Sub() Button_Com_Click(Me, EventArgs.Empty), Sub() Button_Rule_Click(Me, EventArgs.Empty))
+            f.ShowDialog(Me)
+        End Using
+        TextBox_BarCode.Focus()
+    End Sub
+
     Private Sub Button_Manual_Click(ByVal sender As Object, ByVal e As EventArgs) Handles Button_Manual.Click
         '==========================================================================================
         'Function : 사용자 설명서 열기 (tblConfig ManualPath - 전체 경로 또는 데이터 폴더 기준 상대 경로)
@@ -725,6 +737,7 @@ Public Class frmRouterMain
         Me.Button_Rule.Text = clsLang.L("⑂  분기 조건 설정", "⑂  分岐条件設定")
         Me.Button_Com.Text = clsLang.L("⇄  COM 설정", "⇄  COM設定")
         Me.Button_Display.Text = clsLang.L("⚙  화면 설정", "⚙  画面設定")
+        Me.Button_Guide.Text = clsLang.L("⛓  연동 가이드", "⛓  連携ガイド")
         Me.Button_Release.Text = clsLang.L("■  대기 해제", "■  待機解除")
     End Sub
 

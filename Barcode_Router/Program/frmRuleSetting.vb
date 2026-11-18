@@ -188,6 +188,10 @@ Public Class frmRuleSetting
         Return lst
     End Function
 
+    Private Function OtherDests(ByVal exceptDestID As Integer) As List(Of clsDestination)
+        Return mSetting.Destinations.Where(Function(d) d.DestID <> exceptDestID AndAlso d.Enabled).ToList
+    End Function
+
     Private Function SaveDestinations() As Boolean
         Try
             mSetting.SaveReaderAndDestinations()
@@ -203,7 +207,7 @@ Public Class frmRuleSetting
         If mSetting.Destinations.Count > 0 Then newID = mSetting.Destinations.Max(Function(x) x.DestID) + 1
         Dim d As New clsDestination With {.DestID = newID, .Setting = "", .Enabled = True}     '통신설정 / 종료 신호는 비워 두고 입력받는다 (기본값을 두지 않음)
 
-        Using f As New frmDestEdit(d, True, UsedPorts(newID))
+        Using f As New frmDestEdit(d, True, UsedPorts(newID), OtherDests(newID))
             If f.ShowDialog(Me) <> DialogResult.OK Then Exit Sub
         End Using
 
@@ -220,7 +224,7 @@ Public Class frmRuleSetting
                                              .ProcessName = cur.ProcessName, .EndTimeoutSec = cur.EndTimeoutSec, .Enabled = cur.Enabled,
                                              .EndMessage = cur.EndMessage, .LineEnd = cur.LineEnd}
 
-        Using f As New frmDestEdit(work, False, UsedPorts(cur.DestID))
+        Using f As New frmDestEdit(work, False, UsedPorts(cur.DestID), OtherDests(cur.DestID))
             If f.ShowDialog(Me) <> DialogResult.OK Then Exit Sub
         End Using
 

@@ -15,6 +15,7 @@ Public Class frmDestEdit
 
     Private mDest As clsDestination
     Private mUsedPorts As List(Of String)       '다른 곳에서 쓰는 COM (대문자)
+    Private mOtherDests As List(Of clsDestination)  '다른 사용 중 분기 대상 (프로세스명 중복 확인, 2026-11-02)
 
     '종료 신호 / 끝 문자 (2026-10-28 추가 - 분기 대상마다 다를 수 있음. Designer 를 건드리지 않고 코드에서 만든다)
     Private WithEvents TextBox_EndMessage As New TextBox With {.BorderStyle = BorderStyle.FixedSingle, .Font = clsUiTheme.UiFont(10.0!), .Size = New Size(80, 25)}
@@ -45,11 +46,12 @@ Public Class frmDestEdit
         End Get
     End Property
 
-    Public Sub New(ByVal dest As clsDestination, ByVal isNew As Boolean, ByVal usedPorts As List(Of String))
+    Public Sub New(ByVal dest As clsDestination, ByVal isNew As Boolean, ByVal usedPorts As List(Of String), Optional ByVal otherDests As List(Of clsDestination) = Nothing)
         InitializeComponent()
         Call ApplyLanguageTexts()       '화면 글자를 언어 설정(clsLang)에 맞게 (2026-10-28). 아래 제목보다 먼저
         mDest = dest
         mUsedPorts = usedPorts
+        mOtherDests = If(otherDests, New List(Of clsDestination))
         Label_Header.Text = If(isNew, clsLang.L("＋  분기 COM 신규", "＋  分岐COM 新規"), clsLang.L("✎  분기 COM 수정", "✎  分岐COM 修正")) & "   (No " & dest.DestID & ")"
     End Sub
 
@@ -72,7 +74,7 @@ Public Class frmDestEdit
         Call AddEndControls()
         TextBox_EndMessage.Text = mDest.EndMessage
         ComboBox_LineEnd.SelectedItem = If(ComboBox_LineEnd.Items.Contains(mDest.LineEnd.ToUpperInvariant), mDest.LineEnd.ToUpperInvariant, Nothing)
-        Label_ProcessHint.Text = clsLang.L("바코드를 보낼 때 앞으로 띄울 프로그램 (.exe 없이 이름, 또는 exe 전체 경로)", "バーコード送信時に前面に出すプログラム (.exeなしの名前、またはexeのフルパス)")
+        Label_ProcessHint.Text = clsLang.L("프로세스명 또는 exe 전체 경로 (같은 이름 exe 는 전체 경로)", "プロセス名またはexeのフルパス (同名exeはフルパス)")
         clsUiTheme.ApplyFont(Me)
     End Sub
 
@@ -114,7 +116,16 @@ Public Class frmDestEdit
         mDest.Port = port
         mDest.Setting = setting
         Dim proc As String = TextBox_Process.Text.Trim
-        mDest.ProcessName = If(proc.Contains("\"), proc, proc.Replace(".exe", "").Replace(".EXE", ""))      'exe 전체 경로는 그대로 (같은 이름 exe 구분)
+        If CheckBox_Enabled.Checked Then
+            '같은 프로그램을 두 대상이 가리키면 어느 쪽이 켜져 있는지 구분하지 못한다 (예 : CPU검사장치 A8 / FAM3 'Inspection System')
+            For Each o As clsDestination In mOtherDests
+                If clsWindowControl.IsSameProcessKey(o.ProcessName, proc) Then
+                    MessageBox.Show("No " & o.DestID & " " & o.DestName & clsLang.L(" 와 프로세스명이 같은 프로그램을 가리킵니다 (", " とプロセス名が同じプログラムを指しています (") & proc & ")" & vbCrLf &
+                                    clsLang.L("이름이 같은 exe 는 exe 전체 경로를 넣어 주세요.", "同じ名前のexeはexeのフルパスを入力してください。"), clsLang.L("분기 COM", "分岐COM"), MessageBoxButtons.OK, MessageBoxIcon.Warning) : TextBox_Process.Focus() : Exit Sub
+                End If
+            Next
+        End If
+        mDest.ProcessName =If(proc.Contains("\"), proc, proc.Replace(".exe", "").Replace(".EXE", ""))      'exe 전체 경로는 그대로 (같은 이름 exe 구분)
         mDest.EndMessage = TextBox_EndMessage.Text.Trim
         mDest.LineEnd = ComboBox_LineEnd.SelectedItem.ToString
         mDest.EndTimeoutSec = CInt(NumericUpDown_Timeout.Value)
@@ -133,7 +144,7 @@ Public Class frmDestEdit
         Me.Label_PcPorts.Text = clsLang.L("직접 입력 가능 (예 : COM15)", "直接入力可 (例 : COM15)")
         Me.Label_SettingCap.Text = clsLang.L("통신설정", "通信設定")
         Me.Label_ProcessCap.Text = clsLang.L("프로세스명", "プロセス名")
-        Me.Label_ProcessHint.Text = clsLang.L("바코드를 보낼 때 앞으로 띄울 프로그램 (.exe 없이, 예 : AIEC_HIPOT)", "バーコード送信時に前面に出すプログラム (.exeなし、例 : AIEC_HIPOT)")
+        Me.Label_ProcessHint.Text = clsLang.L("프로세스명 또는 exe 전체 경로 (같은 이름 exe 는 전체 경로)", "プロセス名またはexeのフルパス (同名exeはフルパス)")
         Me.Label_TimeoutCap.Text = clsLang.L("END 대기", "END待ち")
         Me.Label_TimeoutHint.Text = clsLang.L("초  (0 = 무제한)", "秒  (0 = 無制限)")
         Me.CheckBox_Enabled.Text = clsLang.L("사용", "使用")

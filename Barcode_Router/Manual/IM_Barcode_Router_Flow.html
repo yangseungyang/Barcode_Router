@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Barcode Router 동작 FLOW</title>
+<style>
+:root{color-scheme:light;--bg:#ffffff;--fg:#1f2937;--muted:#6b7280;--border:#d1d5db;--bar:#f8fafc;
+--box:#DDEBF7;--box-s:#2F5597;--box-t:#1F3864;
+--dec:#FFF2CC;--dec-s:#BF8F00;--dec-t:#5c4300;
+--ok:#E2EFDA;--ok-s:#548235;--ok-t:#375623;
+--io:#EDE7F6;--io-s:#5E35B1;--io-t:#311B92;
+--err:#FBE2E2;--err-s:#C00000;--err-t:#7f1010;
+--warn:#FCE4D6;--warn-s:#C55A11;--warn-t:#7a3306;
+--note:#F2F2F2;--note-s:#7F7F7F;--note-t:#404040;
+--line:#5b6472;--hi:#E8590C;--hi-fill:#FFE8D6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.bar{position:fixed;left:0;right:0;top:0;height:52px;display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--bar);border-bottom:1px solid var(--border);z-index:5;white-space:nowrap;overflow-x:auto}
+.bar h1{font-size:15px;margin:0 6px 0 0}
+.bar select,.bar button{font:inherit;font-size:13px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--fg);padding:5px 9px;cursor:pointer}
+.bar select#scen{max-width:280px;font-weight:600}
+.bar button:hover{border-color:var(--box-s)}
+.bar button.pri{background:var(--hi);border-color:var(--hi);color:#fff;font-weight:700}
+.bar button.on{background:var(--box);border-color:var(--box-s);color:var(--box-t);font-weight:700}
+.bar label{font-size:12.5px;color:var(--muted)}
+.bar .sp{flex:1}
+#tabs{position:fixed;left:0;right:0;top:52px;height:46px;display:flex;gap:6px;align-items:center;padding:0 12px;background:#fff;border-bottom:1px solid var(--border);z-index:5;overflow-x:auto;white-space:nowrap}
+#tabs button{font:inherit;font-size:13.5px;border:1px solid var(--border);border-radius:8px 8px 0 0;background:var(--bar);padding:7px 14px;cursor:pointer;color:var(--fg)}
+#tabs button.on{background:var(--box-s);border-color:var(--box-s);color:#fff;font-weight:700}
+#tabs .c{display:inline-block;min-width:20px;margin-left:6px;padding:0 6px;border-radius:10px;background:var(--hi);color:#fff;font-size:11.5px;font-weight:700}
+.bar .zm{font-size:12px;color:var(--muted);min-width:42px;text-align:right}
+.bar .hint{font-size:11.5px;color:var(--muted)}
+#stage{position:fixed;left:0;right:0;top:98px;bottom:0;overflow:hidden;cursor:grab;background:#fff;
+  background-image:radial-gradient(#e5e7eb 1px,transparent 1px);background-size:22px 22px}
+#stage.drag{cursor:grabbing}
+#world{position:absolute;left:0;top:0;transform-origin:0 0}
+#world.anim{transition:transform .45s ease}
+svg{display:block;overflow:visible}
+.frame{fill:#fff;stroke:#cbd5e1;stroke-width:1.5}
+.ftitle{font-size:20px;font-weight:700;fill:#1f2937}
+.lane{fill:#f8fafc;stroke:#e2e8f0}
+.lanet{font-size:13px;font-weight:700;fill:#64748b}
+.nd .sh{stroke-width:1.6}
+.nd.p .sh,.nd.io .sh{fill:var(--box);stroke:var(--box-s)}.nd.p .tx{color:var(--box-t)}
+.nd.io .sh{fill:var(--io);stroke:var(--io-s)}.nd.io .tx{color:var(--io-t)}
+.nd.d .sh{fill:var(--dec);stroke:var(--dec-s)}.nd.d .tx{color:var(--dec-t)}
+.nd.s .sh,.nd.e .sh{fill:var(--ok);stroke:var(--ok-s)}.nd.s .tx,.nd.e .tx{color:var(--ok-t)}
+.nd.x .sh{fill:var(--err);stroke:var(--err-s)}.nd.x .tx{color:var(--err-t)}
+.nd.w .sh{fill:var(--warn);stroke:var(--warn-s)}.nd.w .tx{color:var(--warn-t)}
+.nd.k .sh{fill:var(--note);stroke:var(--note-s);stroke-dasharray:5 4}.nd.k .tx{color:var(--note-t)}
+.tx{font-size:13px;line-height:1.3;display:flex;align-items:center;justify-content:center;text-align:center;height:100%;padding:0 8px;word-break:keep-all;overflow-wrap:anywhere;font-weight:600}
+.nid{font-size:10.5px;fill:#94a3b8;font-family:Consolas,monospace}
+.ed{stroke:var(--line);stroke-width:1.4;fill:none}
+.el{font-size:12.5px;font-weight:700;fill:#2f6f3a}.el.no{fill:#b42318}
+.ed.jn{stroke-dasharray:7 5}
+.act .nd{opacity:.45}.act .nd.v{opacity:1}
+.act .ed{opacity:.35}.act .ed.v{opacity:1;stroke:var(--hi);stroke-width:3}
+.act .el{opacity:.4}.act .el.v{opacity:1;fill:var(--hi)}
+.nd.v .sh{stroke:var(--hi);stroke-width:3;fill:var(--hi-fill)}
+.nd.v .tx{color:#7a2e0b}
+.nd.cur .sh{stroke-width:5}
+.nd.cur{animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){.nd.cur{animation:none}#world.anim{transition:none}}
+.bdg rect{fill:var(--hi)}.bdg text{fill:#fff;font-size:12px;font-weight:700}
+#cap{position:fixed;left:14px;bottom:14px;max-width:min(560px,calc(100vw - 28px));background:#fff;border:1px solid var(--border);border-left:5px solid var(--hi);border-radius:10px;padding:10px 14px;box-shadow:0 4px 18px rgba(0,0,0,.12);z-index:4;font-size:13px}
+#cap .k{font-size:11.5px;color:var(--muted)}
+#cap .t{font-size:15px;font-weight:700;margin:2px 0}
+#cap .n{color:var(--hi);font-weight:700}
+#cap .l{font-family:Consolas,monospace;font-size:11.5px;color:var(--muted);margin-top:2px}
+#cap .o{font-size:14px;font-weight:700}
+#panel{position:fixed;right:0;top:98px;bottom:0;width:min(420px,100vw);background:#fff;border-left:1px solid var(--border);box-shadow:-6px 0 18px rgba(0,0,0,.08);z-index:6;overflow:auto;padding:14px;display:none}
+#panel.open{display:block}
+#panel h2{font-size:15px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.f{display:flex;flex-direction:column;gap:3px;font-size:12.5px;margin:0 0 10px}
+.f>span{color:var(--muted)}
+.f input[type=text],.f input[type=number],.f select{font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:#fff;width:100%}
+.dst{border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.dst label{margin-right:10px;white-space:nowrap;font-size:12.5px;display:inline-block}
+.dst input[type=number]{width:60px}
+.rule{display:flex;gap:6px;align-items:center;font-size:12.5px;margin-bottom:4px}.f .rule input{width:90px}.f .rule select{width:auto}
+#panel button{font:inherit;font-size:13px;border:1px solid var(--border);border-radius:7px;background:#fff;padding:5px 10px;cursor:pointer}
+#panel button.pri{background:var(--hi);border-color:var(--hi);color:#fff;font-weight:700;width:100%;padding:8px}
+.leg{position:fixed;right:14px;bottom:14px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:11.5px;color:var(--muted);z-index:3;display:flex;gap:10px;flex-wrap:wrap;max-width:calc(100vw - 600px)}
+.leg i{display:inline-block;width:14px;height:10px;border:1.5px solid;margin-right:4px;vertical-align:-1px}
+@media (max-width:1100px){.leg{display:none}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>Barcode Router 동작 FLOW</h1>
+  <select id="scen" title="시나리오"></select>
+  <button id="bPlay" class="pri">▶ 재생</button>
+  <button id="bResult">결과만 보기</button>
+  <label>속도 <select id="spd"><option value="2000">아주 느리게</option><option value="1300">느리게</option><option value="800" selected>보통</option><option value="400">빠르게</option><option value="150">아주 빠르게</option></select></label>
+  <button id="bCond">조건 정하기</button>
+  <span class="sp"></span>
+  <span class="hint">Ctrl + 휠 = 확대/축소 · 휠 / 드래그 = 이동 · ← → = 한 단계 · Space = 재생/멈춤</span>
+  <button id="bFit" title="이 차트 전체가 한 화면에 보이게">전체 보기</button><span class="zm" id="zm"></span>
+</div>
+<div id="tabs"></div>
+<div id="stage"><div id="world"></div></div>
+<div id="cap"></div>
+<div class="leg">
+  <span><i style="background:var(--ok);border-color:var(--ok-s);border-radius:6px"></i>시작 / 정상 끝</span>
+  <span><i style="background:var(--box);border-color:var(--box-s)"></i>처리</span>
+  <span><i style="background:var(--dec);border-color:var(--dec-s);transform:rotate(45deg) scale(.8)"></i>판단</span>
+  <span><i style="background:var(--io);border-color:var(--io-s)"></i>COM 신호</span>
+  <span><i style="background:var(--warn);border-color:var(--warn-s)"></i>경고</span>
+  <span><i style="background:var(--err);border-color:var(--err-s)"></i>오류</span>
+  <span><i style="background:var(--hi-fill);border-color:var(--hi)"></i>지나간 길</span><span>분기 : 예 = 오른쪽으로 꺾어 계속 · 아니오 = 아래 (에러 · 경고) · 점선 = 합류 / 되돌아감</span>
+</div>
+<div id="panel">
+  <h2>조건 정하기 <button id="bClose">닫기</button></h2>
+  <label class="f"><span>무엇을 볼까</span><select id="mode"><option value="barcode">바코드 1 건 처리</option><option value="router">Router 기동</option><option value="prog">검사 프로그램 기동</option></select></label>
+  <label class="f m-b"><span>바코드 (6자리 = 제품 인덱스 / 8자리 숫자 = 작업자)</span><input type="text" id="barcode"></label>
+  <label class="f m-b"><span>MSCODE (PLASMA 가 돌려줄 값)</span><input type="text" id="mscode"></label>
+  <label class="f m-b"><span>PLASMA 조회</span><select id="plasmaOk"><option value="1">OK</option><option value="0">실패 (서버 / 생산정보 없음)</option></select></label>
+  <label class="f m-b"><span>제품 바코드 종류 길이</span><select id="productLen"><option value="any">제한 없음 (저장소 설정)</option><option value="six">6자리만</option></select></label>
+  <div class="f m-b"><span>분기 규칙 (우선순위 순)</span>
+    <div class="rule">1 · MSCODE <select id="op1"><option>LIKE</option><option>EQUAL</option></select><input type="text" id="val1"> → 프로그램1</div>
+    <div class="rule">2 · MSCODE <select id="op2"><option>LIKE</option><option>EQUAL</option></select><input type="text" id="val2"> → 프로그램2</div>
+  </div>
+  <div class="f m-b m-r"><span>프로그램1</span><div class="dst" id="d1"></div></div>
+  <div class="f m-b m-r"><span>프로그램2</span><div class="dst" id="d2"></div></div>
+  <label class="f m-b"><span>검사 결과</span><select id="result"><option value="pass">PASS</option><option value="ng_end">NG → [종료]</option><option value="ng_retry">NG → [재검사] → PASS</option><option value="precheck">시작 확인 오류 → [중지]</option></select></label>
+  <label class="f m-b"><span>검사 중에 생기는 일</span><select id="during"><option value="none">없음</option><option value="rescan">바코드를 또 찍음</option><option value="closed">검사 프로그램이 꺼짐</option><option value="release">[대기 해제] 누름</option><option value="setting">설정 버튼 누름</option></select></label>
+  <div class="f m-ro"><span>Router 기동 조건</span><div class="dst">
+    <label><input type="checkbox" id="rDup"> 이미 실행 중</label><label><input type="checkbox" id="rMdb"> 설정 읽기 OK</label>
+    <label><input type="checkbox" id="rCom"> 입력 = COM 리더</label><label><input type="checkbox" id="rReader"> 리더 COM OK</label></div></div>
+  <div class="f m-p"><span>검사 프로그램 기동 조건</span><div class="dst">
+    <label><input type="checkbox" id="pDup"> 같은 프로그램이 이미 실행 중</label><label><input type="checkbox" id="pSame"> 프로그램1 · 2 exe 이름이 같음</label></div></div>
+  <button class="pri" id="runBtn">이 조건으로 결과 보기</button>
+</div>
+
+<script>
+// Barcode Router + 연동 프로그램 동작 FLOW 데이터와 시뮬레이션 (HTML / Excel 공통)
+// 근거 : Barcode_Router frmRouterMain.vb, clsRouteData.vb, clsRouteJudge.vb, clsRouterPort.vb, clsWindowControl.vb,
+//        Application.myapp(SingleInstance), Files\LinkKit\clsRouterLink.vb,
+//        검사 프로그램 frm001_Main.vb (MainProcess 중복 확인, SerialPort1_DataReceived, txtBarcode_TextChanged),
+//        frm020_InspectionStartEnd.vb (MainProcess 확인 단계), frm030_InspectionInformation.vb (NG / 재검사 / 종료)
+// 노드 형식 : s 시작 · p 처리 · d 판단 · io 신호 · e 정상 끝 · x 오류 끝 · w 경고 · k 다른 차트로
+(function (root) {
+  'use strict';
+
+  const CHARTS = [
+    {
+      id: 'A', title: 'A. Router 기동', cols: 2,
+      lanes: [{ name: 'Router', cols: [0, 1], cls: 'p' }],
+      nodes: [
+        ['A01', 's', 0, 0, 'Barcode_Router.exe 실행'],
+        ['A02', 'd', 0, 1, '처음 실행인가? (Router 가 떠 있지 않음)', '단일 실행 (Application.myapp SingleInstance = true)'],
+        ['A02y', 'x', 1, 1, '새로 띄운 것은 바로 끝남 · 떠 있던 Router 창이 앞으로', '두 번째 Router 는 화면이 뜨지 않는다. 오류 메시지 없음'],
+        ['A04', 'd', 0, 3, 'RouterSetting.mdb 읽기 OK?', 'Files\\RouterSetting.mdb (Jet → ACE 순서로 시도)', 'Setting Load OK : 분기 대상 2 / 규칙 2'],
+        ['A04n', 'x', 1, 3, '「설정을 읽지 못했습니다」 → 빈 설정으로 계속', '분기 대상 / 규칙이 없으므로 바코드를 찍어도 보낼 곳이 없다', 'Setting Load NG : …'],
+        ['A06', 'd', 0, 5, '바코드 입력 방식 = COM?', 'COM 설정 > 바코드리더 (tblReader InputMode)'],
+        ['A06n', 'p', 1, 5, 'HID 입력 (바코드 칸 + Enter)'],
+        ['A07', 'd', 0, 6, '리더 COM 열기 OK?', '', 'Reader COM Open OK : COMx'],
+        ['A07n', 'w', 1, 6, '「바코드리더 COM 을 열지 못했습니다」 (계속 진행)', '', 'Reader COM Open NG : …'],
+        ['A08', 'p', 0, 7, '분기 대상 COM 열기 (사용 중인 대상마다)', 'tblDestination Port / Setting (예 9600-N-8-1)'],
+        ['A09', 'd', 0, 8, '열기 OK?', '', 'Dest COM Open OK : 대상'],
+        ['A09n', 'w', 1, 8, '분기 대상 카드 빨강 「COM 실패」 (보낼 때 한 번 더 열어 봄)', '', 'Dest COM Open NG : …'],
+        ['A11', 'e', 0, 10, '대기 (초록) 「바코드를 찍어 주세요」 · 1초 감시 시작'],
+      ],
+      edges: [
+        ['A01', 'A02'], ['A02', 'A02y', 'NO'], ['A02', 'A04', 'YES'], ['A04', 'A04n', 'NO'], ['A04', 'A06', 'YES'],
+        ['A04n', 'A06', '', 'b', 'r'], ['A06', 'A06n', 'NO'], ['A06', 'A07', 'YES'], ['A07', 'A07n', 'NO'], ['A07', 'A08', 'YES'],
+        ['A06n', 'A08', '', 'r', 'r'], ['A07n', 'A08', '', 'b', 'r'], ['A08', 'A09'], ['A09', 'A09n', 'NO'], ['A09', 'A11', 'YES'], ['A09n', 'A11', '', 'b', 'r'],
+      ],
+    },
+    {
+      id: 'B', title: 'B. 검사 프로그램 기동 (프로그램1 · 2 공통)', cols: 2,
+      lanes: [{ name: '검사 프로그램', cols: [0, 1], cls: 't' }],
+      nodes: [
+        ['B01', 's', 0, 0, '검사 프로그램 exe 실행'],
+        ['B02', 'd', 0, 1, '같은 exe 이름의 프로그램이 없음?', 'frm001_Main MainProcess : GetProcessesByName(자기 프로세스명) 이 2 개 이상'],
+        ['B02y', 'x', 1, 1, '「이 프로그램은 이미 실행 중입니다」 → 끝', '(검사 프로그램 화면에는 일본어로 표시) 프로그램1 · 2 의 exe 이름이 같으면 다른 프로그램인데도 여기서 막힌다 → 어셈블리 이름을 다르게 (설명서 7.5)'],
+        ['B03', 'p', 0, 2, '로그 · 장치 확인 · 화면 · 바코드 COM 열기', 'EquipmentSetting.mdb BarcodeReaderPort = COMb (Router 와 짝인 가상 COM)', '중복 실행 확인 완료'],
+        ['B05', 'e', 0, 4, '검사 대기 (바코드를 기다림)'],
+        ['B06', 'k', 1, 4, 'RouterLink.mdb 는 기동 때가 아니라 첫 END 보낼 때 1 번 읽음', 'clsRouterLink.IsEnabled 는 처음 한 번만 읽고 기억한다. 값을 바꾸면 프로그램을 다시 실행'],
+      ],
+      edges: [['B01', 'B02'], ['B02', 'B02y', 'NO'], ['B02', 'B03', 'YES'], ['B03', 'B05']],
+    },
+    {
+      id: 'C', title: 'C. 제품 바코드 (ROUTE) → 검사 → END', cols: 4,
+      lanes: [{ name: 'Router', cols: [0, 1], cls: 'p' }, { name: '검사 프로그램 (프로그램1 또는 2)', cols: [2, 3], cls: 't' }],
+      nodes: [
+        ['C01', 's', 0, 0, '바코드 입력', 'HID : 바코드 칸 + Enter / COM : 바코드리더 COM 한 줄'],
+        ['C02', 'd', 0, 1, '대기 상태? (END 기다리는 대상 없음)', '대기 목록 (mPending) 에 대상이 있음'],
+        ['C02y', 'w', 1, 1, '보내지 않음 「검사 중 · 끝난 뒤 다시 찍어 주세요」', 'HID 는 바코드 칸이 잠겨 입력 자체가 안 된다. COM 리더는 받은 뒤 버린다', 'Barcode skip (검사 중) : …'],
+        ['C03', 'd', 0, 2, '맞는 바코드 종류 있음?', 'tblBarcodeType 번호 순 : 길이 · 글자 종류 · 패턴. 처음 맞는 종류', 'Barcode Type : 종류 (동작)'],
+        ['C03n', 'x', 1, 2, '「등록되지 않은 바코드입니다」', '', 'Barcode NG : 맞는 바코드 종류 없음'],
+        ['C04', 'd', 0, 3, '제품 바코드 (ROUTE)?', '바코드 종류의 동작 (tblBarcodeType ActionType)'],
+        ['C04y', 'k', 1, 3, '작업자 (BROADCAST) → D 차트 / 그 외 (REJECT) → 보내지 않음'],
+        ['C06', 'p', 0, 5, 'PLASMA 조회 (상태 파랑 「조회 중」)', 'tblConfig PlasmaHost1 / 2 · Port · Command. 바코드 → 인덱스 번호로 조회'],
+        ['C07', 'd', 0, 6, '조회 OK?'],
+        ['C07n', 'x', 1, 6, '「PLASMA 조회 실패」', '서버 미설정 / 생산정보 없음 (ERROR:A0) / 취소 (A1) / 타임아웃 (13) / 데이터 없음 …', 'PLASMA NG : …'],
+        ['C08', 'p', 0, 7, '항목 값 만들기 → 제품 정보 카드 표시', 'tblField : MSCODE = PLASMA $MS_CODE, MODEL = MSCODE 를 「-」 로 나눈 1 번째 …', 'PLASMA OK : MSCODE=… MODEL=…'],
+        ['C09', 'd', 0, 8, '맞는 분기 규칙 있음? (대상 「사용」 중)', '우선순위가 작은 규칙부터, 처음 맞는 규칙. 줄끼리 AND / OR', 'Judge OK : 규칙 → 대상'],
+        ['C09n', 'x', 1, 8, '「분기 대상 없음」 / 「분기 대상 설정 오류」', '분기 조건 / COM 설정을 확인', 'Judge NG : 분기 대상 없음'],
+        ['C11', 'd', 0, 10, '대상 프로그램 실행 중?', 'COM 설정의 프로세스명 (exe 이름 또는 전체 경로). 비워 두면 확인하지 않음'],
+        ['C11n', 'x', 1, 10, '「프로그램이 실행되어 있지 않습니다」 · 보내지 않음', '', 'Send skip : 프로그램 꺼짐 …'],
+        ['C12', 'd', 0, 11, 'COMa 로 전송 OK?', '바코드 + 끝 문자 (대상별 CR / LF / CRLF). 포트가 닫혀 있으면 한 번 더 열어 봄', 'Send OK : 대상 ← 바코드'],
+        ['C12n', 'x', 1, 11, '「전송 실패」 · COM 확인', '', 'Send NG : …'],
+        ['C13', 'p', 0, 12, '검사 중 (주황) · 대상 창을 앞으로 · END 기다림', '바코드 칸 잠금. 기다리는 동안 1초마다 감시 → E 차트'],
+        ['P01', 'io', 2, 12, '바코드 수신 (COMb)', 'SerialPort1_DataReceived → 바코드 칸에 넣음'],
+        ['P02', 'd', 2, 13, '6자리 또는 9자리 이상?', '6자리 = PLASMA 바코드 검사, 9자리 이상 = 기종명 검사'],
+        ['P02n', 'p', 3, 13, '8자리 = 작업자 변경 / 그 외 = 검사 안 함', '8자리 : 사원 서버 조회 → 작업자 이름 저장 (OP_EXC)'],
+        ['P04', 'd', 2, 15, '검사 시작 확인 모두 OK?', 'PLASMA 통신 → MSCODE 조회 → 기종 확인 → 시작 데이터 저장 → 오더 중복 → 검사 형식 → 중지 플래그'],
+        ['P04y', 'w', 3, 15, '오류 표시 → [중지]', '경고는 [계속] 도 가능 (계속하면 다음 확인 단계로)'],
+        ['P05', 'p', 2, 16, '검사 화면 : 검사 항목 차례로 실행'],
+        ['P06', 'd', 2, 17, '모든 항목 PASS?'],
+        ['P06y', 'd', 3, 17, '[종료] 를 누름?', 'NG 에서 멈춤 : [재검사] = 그 항목부터 다시 / [종료] = 검사 끝'],
+        ['P06e', 'x', 3, 18, 'NG 저장 (NG DB · AWS)'],
+        ['P07', 'e', 2, 18, 'PASS · 결과 저장 · 출력'],
+        ['P09', 'd', 2, 20, 'RouterLink.mdb = Yes?', 'EquipmentSetting.mdb 와 같은 폴더. 파일이 없거나 읽기 오류면 No (오류 메시지 없음)', 'RouterLink : Yes (…)'],
+        ['P09n', 'x', 3, 20, 'END 안 보냄 → Router 는 「검사 중」 그대로', '→ E 차트 : 타임아웃 또는 [대기 해제]', 'RouterLink : No (…)'],
+        ['P10', 'io', 2, 21, '「END」 + CR 송신 (COMb)', '보내기 전에 AllowSetForegroundWindow → Router 가 자기 창을 앞으로 올릴 수 있게', 'Router END Send OK : COMb'],
+        ['C15', 'd', 0, 22, '기다리던 대상의 END?', '대상별 EndMessage (대소문자 무시) 이고, 그 대상을 기다리는 중', 'END : 대상'],
+        ['C15n', 'p', 1, 22, '무시 (로그만)', 'END 가 아닌 글 / [대기 해제] 뒤에 늦게 온 END', 'Recv 대상 : …'],
+        ['C18', 'd', 0, 25, '이 대상을 빼고, 기다리는 대상 모두 끝?', '마지막 END 시각을 분기 대상 카드에 표시'],
+        ['C18n', 'w', 1, 25, '검사 중 유지 (다른 대상 END 기다림)'],
+        ['C19', 'e', 0, 26, '대기 (초록) · Router 창을 앞으로 · 바코드 칸 포커스'],
+      ],
+      edges: [
+        ['C01', 'C02'], ['C02', 'C02y', 'NO'], ['C02', 'C03', 'YES'], ['C03', 'C03n', 'NO'], ['C03', 'C04', 'YES'], ['C04', 'C04y', 'NO'], ['C04', 'C06', 'YES'],
+        ['C06', 'C07'], ['C07', 'C07n', 'NO'], ['C07', 'C08', 'YES'], ['C08', 'C09'],
+        ['C09', 'C09n', 'NO'], ['C09', 'C11', 'YES'], ['C11', 'C11n', 'NO'], ['C11', 'C12', 'YES'],
+        ['C12', 'C12n', 'NO'], ['C12', 'C13', 'YES'], ['C13', 'P01', '가상 COM  COMa → COMb'],
+        ['P01', 'P02'], ['P02', 'P02n', 'NO'], ['P02', 'P04', 'YES'], ['P04', 'P04y', 'NO'], ['P04', 'P05', 'YES'],
+        ['P05', 'P06'], ['P06', 'P06y', 'NO'], ['P06', 'P07', 'YES'], ['P06y', 'P06e', 'YES'], ['P06y', 'P05', 'NO', 't', 'r'],
+        ['P02n', 'P09', '', 'r', 'r'], ['P04y', 'P09', '', 'r', 'r'], ['P06e', 'P09', '', 'b', 'r'], ['P07', 'P09'],
+        ['P09', 'P09n', 'NO'], ['P09', 'P10', 'YES'], ['P10', 'C15', 'END  COMb → COMa', 'l', 't'],
+        ['C15', 'C15n', 'NO'], ['C15', 'C18', 'YES'], ['C18', 'C18n', 'NO'], ['C18', 'C19', 'YES'],
+      ],
+    },
+    {
+      id: 'D', title: 'D. 작업자 바코드 (BROADCAST) → 모든 대상', cols: 2,
+      lanes: [{ name: 'Router', cols: [0, 1], cls: 'p' }],
+      nodes: [
+        ['D01', 's', 0, 0, 'BROADCAST 종류 바코드', '예 : 작업자 (8자리 숫자)'],
+        ['D03', 'd', 0, 2, '이 대상 「사용」?'],
+        ['D03n', 'p', 1, 2, '건너뜀'],
+        ['D04', 'd', 0, 3, '대상 프로그램 실행 중?', '꺼진 프로그램은 END 가 오지 않으므로 보내지 않는다'],
+        ['D04n', 'p', 1, 3, '건너뜀', '', 'Send skip : 프로그램 꺼짐 …'],
+        ['D05', 'd', 0, 4, 'COMa 로 전송 OK?'],
+        ['D05n', 'p', 1, 4, '건너뜀', '', 'Send NG : …'],
+        ['D06', 'p', 0, 5, '보낸 곳에 추가 · END 대기 목록에 넣기', '', 'Send OK : 대상 ← 바코드'],
+        ['D07', 'd', 0, 6, '마지막 대상?'],
+        ['D08', 'd', 0, 7, '보낸 곳이 1 개 이상?'],
+        ['D08y', 'x', 1, 7, '「바코드를 보낼 곳이 없습니다」', '검사 프로그램 실행 / COM 설정을 확인'],
+        ['D09', 'p', 0, 8, '제목줄에 작업자 표시 · 검사 중 (보낸 프로그램 이름)'],
+        ['D10', 'k', 0, 9, '보낸 프로그램마다 C 차트 P01 → END → C15', '각 프로그램 : 8자리 → 작업자 변경 → END 회신. 모든 END 를 받으면 대기'],
+      ],
+      edges: [
+        ['D01', 'D03'], ['D03', 'D03n', 'NO'], ['D03', 'D04', 'YES'], ['D04', 'D04n', 'NO'], ['D04', 'D05', 'YES'],
+        ['D05', 'D05n', 'NO'], ['D05', 'D06', 'YES'], ['D06', 'D07'], ['D07', 'D03', 'NO', 'l', 'l'], ['D07', 'D08', 'YES'],
+        ['D03n', 'D07', '', 'r', 'r'], ['D04n', 'D07', '', 'r', 'r'], ['D05n', 'D07', '', 'r', 'r'],
+        ['D08', 'D08y', 'NO'], ['D08', 'D09', 'YES'], ['D09', 'D10'],
+      ],
+    },
+    {
+      id: 'E', title: 'E. END 기다리는 동안 (1초 감시 · 버튼)', cols: 4,
+      lanes: [{ name: '1초마다 (Timer_Wait)', cols: [0, 1], cls: 'p' }, { name: '작업자 버튼', cols: [2, 3], cls: 'g' }],
+      nodes: [
+        ['E01', 's', 0, 0, '1초마다'],
+        ['E03', 'd', 0, 2, 'END 기다리는 대상 있음?'],
+        ['E03n', 'p', 1, 2, '끝 (다음 1초)'],
+        ['E04', 'd', 0, 3, '대상 프로그램 실행 중?', '기다리는 대상마다 확인'],
+        ['E04n', 'w', 1, 3, '이 대상 대기 풀기', '', 'Wait Release (프로그램 꺼짐) : …'],
+        ['E05', 'd', 0, 4, 'END 타임아웃이 지났음?', 'COM 설정 > END 타임아웃 (0 = 무제한 → 계속 기다림)'],
+        ['E05n', 'p', 1, 4, '계속 기다림', '타임아웃 0 = 무제한'],
+        ['E07', 'w', 0, 6, '대기 풀기 + 「END 를 받지 못했습니다」', '', 'END Timeout : 대상 (n s)'],
+        ['E08', 'd', 0, 7, '기다리는 대상이 0 개가 됨?'],
+        ['E08n', 'p', 1, 7, '검사 중 유지'],
+        ['E09', 'e', 0, 8, '대기 · Router 창 앞으로', '프로그램이 꺼져서 풀렸으면 빨강 「검사 프로그램이 꺼져 대기를 풀었습니다」'],
+        ['E10', 's', 2, 0, '[■ 대기 해제] 버튼'],
+        ['E11', 'd', 2, 1, 'END 기다리는 중?', '평소에는 회색으로 꺼져 있음'],
+        ['E11n', 'p', 3, 1, '바코드 칸 포커스만'],
+        ['E12', 'd', 2, 2, '「END 를 기다리지 않고 대기로?」 → 예?'],
+        ['E12n', 'p', 3, 2, '그대로 기다림'],
+        ['E13', 'e', 2, 3, '대기 목록 비우기 → 대기 (초록)', '', 'Wait Release (수동) : …'],
+        ['E14', 's', 2, 5, '[분기 조건 / COM / 화면 설정] 버튼', '연동 가이드 ⑤ 의 버튼도 같음'],
+        ['E15', 'd', 2, 6, '대기 상태? (END 기다리는 대상 없음)'],
+        ['E15y', 'x', 3, 6, '「검사 중에는 설정을 바꿀 수 없습니다」'],
+        ['E16', 'p', 2, 7, 'Router 포트 모두 닫기 → 설정 화면', '설정 화면에서 포트 시험을 할 수 있게'],
+        ['E17', 'e', 2, 8, '설정 다시 읽기 · 포트 다시 열기 · 대기'],
+      ],
+      edges: [
+        ['E01', 'E03'], ['E03', 'E03n', 'NO'], ['E03', 'E04', 'YES'], ['E04', 'E04n', 'NO'], ['E04', 'E05', 'YES'],
+        ['E05', 'E05n', 'NO'], ['E05', 'E07', 'YES'], ['E07', 'E08'], ['E04n', 'E08', '', 'r', 'r'],
+        ['E08', 'E08n', 'NO'], ['E08', 'E09', 'YES'],
+        ['E10', 'E11'], ['E11', 'E11n', 'NO'], ['E11', 'E12', 'YES'], ['E12', 'E12n', 'NO'], ['E12', 'E13', 'YES'],
+        ['E14', 'E15'], ['E15', 'E15y', 'NO'], ['E15', 'E16', 'YES'], ['E16', 'E17'],
+      ],
+    },
+  ];
+
+  // ---------------------------------------------------------------- 노드 찾기
+  const NODE = {};
+  CHARTS.forEach(ch => ch.nodes.forEach(n => {
+    NODE[n[0]] = { id: n[0], t: n[1], c: n[2], r: n[3], tx: n[4], tip: n[5] || '', lg: n[6] || '', chart: ch.id };
+  }));
+
+  // ---------------------------------------------------------------- 기본 조건 (저장소 RouterSetting.mdb 값과 같은 예)
+  function defaults() {
+    return {
+      mode: 'barcode',              // barcode / router / prog
+      barcode: 'A1B2C3', mscode: 'F3SP71-4S', plasmaOk: true,
+      productLen: 'any',            // any = 길이 제한 없음 (저장소 설정) / six = 6자리만
+      rules: [{ pri: 1, target: 'MSCODE', op: 'LIKE', val: 'F3*', dest: 1 }, { pri: 2, target: 'MSCODE', op: 'LIKE', val: 'A8*', dest: 2 }],
+      dest: {
+        1: { name: '프로그램1', enabled: true, com: true, running: true, link: true, timeout: 0 },
+        2: { name: '프로그램2', enabled: true, com: true, running: true, link: true, timeout: 0 },
+      },
+      result: 'pass',               // pass / ng_end / ng_retry / precheck
+      during: 'none',               // none / rescan / closed / release / setting
+      router: { dup: false, mdbOk: true, inputCom: false, readerOk: true },
+      prog: { dup: false, sameName: false },
+    };
+  }
+
+  // VB Like → 정규식 (* ? # [ ] [! ])
+  function likeToRe(p) {
+    let s = '';
+    for (let i = 0; i < p.length; i++) {
+      const ch = p[i];
+      if (ch === '*') s += '.*';
+      else if (ch === '?') s += '.';
+      else if (ch === '#') s += '\\d';
+      else if (ch === '[') {
+        const j = p.indexOf(']', i);
+        if (j < 0) return null;
+        let body = p.slice(i + 1, j);
+        if (body[0] === '!') body = '^' + body.slice(1);
+        s += '[' + body.replace(/\\/g, '\\\\') + ']'; i = j;
+      } else s += ch.replace(/[.+^${}()|\\\/]/g, '\\$&');
+    }
+    try { return new RegExp('^' + s + '$', 'i'); } catch (e) { return null; }
+  }
+  function isMatch(value, op, pat) {
+    const v = (value || '').trim().toUpperCase(), p = (pat || '').trim().toUpperCase();
+    if (!p) return false;
+    if (op === 'EQUAL') return v === p;
+    if (/[*?#[]/.test(p)) { const re = likeToRe(p); return re ? re.test(v) : false; }
+    return v.includes(p);
+  }
+
+  function barcodeTypes(S) {
+    return [
+      { no: 1, name: '작업자', min: 8, max: 8, kind: 'NUM', act: 'BROADCAST' },
+      { no: 2, name: '제품', min: S.productLen === 'six' ? 6 : 0, max: S.productLen === 'six' ? 6 : 0, kind: 'ANY', act: 'ROUTE' },
+    ];
+  }
+  function classify(S, code) {
+    for (const t of barcodeTypes(S)) {
+      if (t.min > 0 && code.length < t.min) continue;
+      if (t.max > 0 && code.length > t.max) continue;
+      if (t.kind === 'NUM' && !/^\d+$/.test(code)) continue;
+      return t;
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------- 시뮬레이션
+  function simulate(S) {
+    const st = [];
+    const add = (id, note, ev) => st.push({ id, note: note || '', ev: ev || '' });
+    let outcome = '';
+
+    if (S.mode === 'router') {
+      add('A01');
+      if (S.router.dup) { add('A02', 'Router 가 이미 떠 있음 → NO'); add('A02y'); return { steps: st, outcome: '두 번째 Router 는 뜨지 않고, 떠 있던 Router 가 앞으로 옴' }; }
+      add('A02', 'YES');
+      if (!S.router.mdbOk) { add('A04', 'RouterSetting.mdb 를 읽지 못함 → NO'); add('A04n'); }
+      else add('A04', 'YES');
+      if (!S.router.inputCom) { add('A06', 'HID → NO'); add('A06n'); }
+      else { add('A06', 'COM → YES'); if (S.router.readerOk) add('A07', 'YES'); else { add('A07', '리더 COM 이 없음 / 사용 중 → NO'); add('A07n'); } }
+      add('A08');
+      const bad = [1, 2].filter(k => S.dest[k].enabled && !S.dest[k].com).map(k => S.dest[k].name);
+      if (!S.router.mdbOk) add('A09', '설정이 비어 있어 열 대상이 없음');
+      else if (bad.length) { add('A09', bad.join(', ') + ' → NO'); add('A09n', bad.join(', ') + ' 카드 「COM 실패」'); }
+      else add('A09', '모두 YES');
+      add('A11');
+      outcome = !S.router.mdbOk ? '대기 화면까지 뜨지만 설정이 없어 바코드를 보낼 수 없음' : (bad.length ? '대기. 단 ' + bad.join(', ') + ' 은(는) 보낼 때 다시 열어 보고 실패하면 「전송 실패」' : '정상 기동 → 대기');
+      return { steps: st, outcome };
+    }
+
+    if (S.mode === 'prog') {
+      add('B01', S.prog.sameName ? '프로그램1 이 실행 중인 상태에서 프로그램2 실행 (exe 이름이 같음)' : '');
+      if (S.prog.dup || S.prog.sameName) {
+        add('B02', S.prog.sameName ? '프로그램1 과 exe 이름이 같아서 같은 프로그램으로 보임 → NO' : '같은 프로그램을 한 번 더 실행 → NO');
+        add('B02y');
+        return { steps: st, outcome: S.prog.sameName ? '프로그램2 가 뜨지 않음 → 프로젝트 속성 > 어셈블리 이름을 서로 다르게 하고 다시 빌드' : '두 번째 실행은 메시지 후 끝, 먼저 뜬 프로그램은 그대로' };
+      }
+      add('B02', 'YES'); add('B03'); add('B05'); add('B06');
+      return { steps: st, outcome: '정상 기동 → 바코드 대기' };
+    }
+
+    // ---------------- 바코드 1 건
+    const code = (S.barcode || '').trim();
+    if (!code) return { steps: [], outcome: '바코드를 넣어 주세요' };
+    add('C01', '「' + code + '」 (' + code.length + '자리)');
+    add('C02', 'YES');
+    const bt = classify(S, code);
+    if (!bt) { add('C03', 'NO'); add('C03n', code + ' (' + code.length + '자리)'); return { steps: st, outcome: '보내지 않음 → 화면 설정 > 바코드 종류 확인' }; }
+    add('C03', 'YES : ' + bt.name + ' (' + bt.act + ')');
+
+    if (bt.act === 'BROADCAST') {
+      add('C04', 'NO'); add('C04y');
+      add('D01', '「' + code + '」 = ' + bt.name);
+      const sent = [];
+      [1, 2].forEach((k, i) => {
+        const d = S.dest[k];
+        if (!d.enabled) { add('D03', d.name + ' : NO'); add('D03n', d.name); }
+        else {
+          add('D03', d.name + ' : YES');
+          if (!d.running) { add('D04', d.name + ' : NO'); add('D04n', d.name); }
+          else {
+            add('D04', d.name + ' : YES');
+            if (!d.com) { add('D05', d.name + ' : NO'); add('D05n', d.name); }
+            else { add('D05', d.name + ' : YES'); add('D06', d.name + ' ← ' + code); sent.push(k); }
+          }
+        }
+        add('D07', i === 0 ? 'NO (다음 대상 ' + S.dest[2].name + ')' : 'YES');
+      });
+      if (sent.length === 0) { add('D08', 'NO'); add('D08y'); return { steps: st, outcome: '아무 데도 보내지 않음' }; }
+      add('D08', 'YES (' + sent.map(k => S.dest[k].name).join(', ') + ')');
+      add('D09'); add('D10');
+      return afterSend(S, st, add, sent, code, true);
+    }
+
+    add('C04', 'YES');
+    add('C06');
+    if (!S.plasmaOk) { add('C07', 'NO'); add('C07n'); return { steps: st, outcome: '보내지 않음 (PLASMA 응답 오류)' }; }
+    add('C07', 'YES');
+    const mscode = (S.mscode || '').trim();
+    const values = { BARCODE: code, MSCODE: mscode, MODEL: mscode.split('-')[0].trim() };
+    add('C08', 'MSCODE=' + (mscode || '(빈 값)') + '  MODEL=' + (values.MODEL || '(빈 값)'));
+    const rules = S.rules.slice().sort((a, b) => a.pri - b.pri);
+    const ru = rules.find(r => isMatch(values[r.target] || '', r.op, r.val));
+    const tried = rules.map(r => '규칙' + r.pri + ' ' + r.target + ' ' + r.op + ' ' + r.val + (isMatch(values[r.target] || '', r.op, r.val) ? ' ○' : ' ×')).join(' / ');
+    if (!ru) { add('C09', 'NO : ' + tried); add('C09n'); return { steps: st, outcome: '보내지 않음 (어느 규칙에도 맞지 않음)' }; }
+    const d = S.dest[ru.dest];
+    if (!d.enabled) { add('C09', 'NO : 규칙' + ru.pri + ' → ' + d.name + ' 「사용 안 함」'); add('C09n', '분기 대상 설정 오류'); return { steps: st, outcome: '보내지 않음 (분기 대상 사용 안 함)' }; }
+    add('C09', 'YES : 규칙' + ru.pri + ' (' + ru.target + ' ' + ru.op + ' ' + ru.val + ') → ' + d.name);
+    if (!d.running) { add('C11', d.name + ' 꺼짐 → NO'); add('C11n', d.name); return { steps: st, outcome: '보내지 않음 → ' + d.name + ' 을(를) 실행한 뒤 다시 찍기' }; }
+    add('C11', d.name + ' 실행 중 → YES');
+    if (!d.com) { add('C12', 'COMa 를 열 수 없음 → NO'); add('C12n'); return { steps: st, outcome: '보내지 않음 → COM 설정 / 가상 COM 확인' }; }
+    add('C12', 'YES : ' + d.name + ' ← ' + code);
+    return afterSend(S, st, add, [ru.dest], code, false);
+  }
+
+  function afterSend(S, st, add, sent, code, broadcast) {
+    if (!broadcast) { add('C13', S.dest[sent[0]].name + ' 창이 앞으로'); }
+    const pending = new Set(sent);
+    let released = false, outcome = '';
+
+    if (S.during === 'rescan') { add('C01', '검사 중에 바코드를 또 찍음', '사건'); add('C02', 'NO'); add('C02y'); }
+    if (S.during === 'setting') { add('E14', '검사 중에 설정 버튼을 누름', '사건'); add('E15', 'NO'); add('E15y'); }
+
+    const res = { pass: 'PASS', ng_end: 'NG → [종료]', ng_retry: 'NG → [재검사] → PASS', precheck: '시작 확인 오류 → [중지]' };
+    const resultOf = [];
+
+    sent.forEach((k, idx) => {
+      const d = S.dest[k];
+      add('P01', d.name + ' 이(가) 「' + code + '」 받음');
+      const len = code.length;
+      if (len === 6 || len > 8) {
+        add('P02', 'YES (' + len + '자리)');
+        if (S.result === 'precheck') { add('P04', 'NO'); add('P04y'); }
+        else {
+          add('P04', 'YES'); add('P05');
+          if (S.during === 'closed' && idx === 0) {
+            add('E01', '검사 도중 ' + d.name + ' 이(가) 꺼짐', '사건'); add('E03', 'YES'); add('E04', d.name + ' 꺼짐 → NO'); add('E04n', d.name);
+            pending.delete(k);
+            if (pending.size === 0) { add('E08', 'YES'); add('E09', '빨강 「검사 프로그램이 꺼져 대기를 풀었습니다」'); }
+            else add('E08', 'NO'), add('E08n');
+            resultOf.push(d.name + ' 꺼짐');
+            return;
+          }
+          if (S.during === 'release' && idx === 0) { add('E10', '검사 도중 작업자가 [대기 해제]', '사건'); add('E11', 'YES'); add('E12', '예'); add('E13'); released = true; pending.clear(); }
+          if (S.result === 'pass') { add('P06', 'YES'); add('P07'); }
+          else if (S.result === 'ng_end') { add('P06', 'NO'); add('P06y', 'YES · [종료]'); add('P06e'); }
+          else { add('P06', 'NO'); add('P06y', 'NO · [재검사]'); add('P05', '다시 검사'); add('P06', 'YES'); add('P07'); }
+        }
+        resultOf.push(d.name + ' ' + res[S.result]);
+      } else {
+        add('P02', 'NO (' + len + '자리)');
+        add('P02n', len === 8 ? '작업자 변경 (사원 서버 조회 → 작업자 이름 저장)' : len + '자리는 검사하지 않음');
+        resultOf.push(d.name + (len === 8 ? ' 작업자 변경' : ' 검사 안 함'));
+      }
+      if (!d.link) { add('P09', d.name + ' RouterLink.mdb 없음 / No → NO'); add('P09n'); return; }
+      add('P09', 'YES'); add('P10', d.name + ' → END');
+      if (!pending.has(k)) { add('C15', released ? 'NO (이미 [대기 해제] 함)' : 'NO'); add('C15n'); return; }
+      add('C15', 'YES'); pending.delete(k);
+      if (pending.size > 0) { add('C18', 'NO (' + [...pending].map(x => S.dest[x].name).join(', ') + ' 남음)'); add('C18n'); }
+      else { add('C18', 'YES'); add('C19'); }
+    });
+
+    if (pending.size > 0) {
+      const names = [...pending].map(x => S.dest[x].name).join(', ');
+      const to = Math.max(...[...pending].map(x => S.dest[x].timeout || 0));
+      add('E01', names + ' 의 END 가 오지 않음', '사건'); add('E03', 'YES'); add('E04', 'YES');
+      if (to > 0) {
+        add('E05', 'YES (' + to + '초 지남)'); add('E07', names); add('E08', 'YES'); add('E09');
+        outcome = resultOf.join(' / ') + ' → END 없음 → ' + to + '초 뒤 타임아웃 메시지 → 대기';
+      } else {
+        add('E05', 'NO (0 = 무제한)'); add('E05n');
+        add('E10', '작업자가 [대기 해제] 를 누름', '사건'); add('E11', 'YES'); add('E12', '예'); add('E13');
+        outcome = resultOf.join(' / ') + ' → END 없음 → Router 가 「검사 중」 으로 멈춤 → [대기 해제] 로만 풀림';
+      }
+      return { steps: st, outcome };
+    }
+    if (S.during === 'closed') outcome = resultOf.join(' / ') + ' → Router 가 기다림을 풀고 대기 (빨강 안내)';
+    else if (released) outcome = resultOf.join(' / ') + ' → [대기 해제] 로 먼저 대기. 늦게 온 END 는 무시';
+    else outcome = resultOf.join(' / ') + ' → END → Router 대기 (다음 바코드)';
+    return { steps: st, outcome };
+  }
+
+  // ---------------------------------------------------------------- 시나리오 (버튼)
+  const P = (name, group, fn, desc) => ({ name, group, fn, desc });
+  const SCEN = [
+    P('Router 정상 기동', '기동', s => { s.mode = 'router'; }),
+    P('Router 중복 기동', '기동', s => { s.mode = 'router'; s.router.dup = true; }),
+    P('설정 파일 읽기 실패', '기동', s => { s.mode = 'router'; s.router.mdbOk = false; }),
+    P('분기 COM 열기 실패', '기동', s => { s.mode = 'router'; s.dest[2].com = false; }),
+    P('검사 프로그램 정상 기동', '기동', s => { s.mode = 'prog'; }),
+    P('검사 프로그램 중복 실행', '기동', s => { s.mode = 'prog'; s.prog.dup = true; }),
+    P('프로그램1·2 exe 이름 같음', '기동', s => { s.mode = 'prog'; s.prog.sameName = true; }),
+    P('MSCODE F3… → 프로그램1 PASS', '바코드', s => { s.mscode = 'F3SP71-4S'; }),
+    P('MSCODE A8… → 프로그램2 PASS', '바코드', s => { s.mscode = 'A8CPU-01'; }),
+    P('검사 NG → 종료', '바코드', s => { s.result = 'ng_end'; }),
+    P('검사 NG → 재검사 → PASS', '바코드', s => { s.result = 'ng_retry'; }),
+    P('검사 시작 확인 오류 (중지)', '바코드', s => { s.result = 'precheck'; }),
+    P('작업자 바코드 (두 프로그램)', '바코드', s => { s.barcode = '12345678'; }),
+    P('작업자 바코드 · 프로그램2 꺼짐', '바코드', s => { s.barcode = '12345678'; s.dest[2].running = false; }),
+    P('규칙에 없는 MSCODE', '오류', s => { s.mscode = 'YZ16-9P'; }),
+    P('PLASMA 조회 실패', '오류', s => { s.plasmaOk = false; }),
+    P('대상 프로그램 꺼짐', '오류', s => { s.dest[1].running = false; }),
+    P('전송 실패 (COM)', '오류', s => { s.dest[1].com = false; }),
+    P('등록 안 된 바코드 (6자리만 설정)', '오류', s => { s.productLen = 'six'; s.barcode = 'A1B2C3D'; }),
+    P('검사 중 바코드 또 찍음', '검사 중', s => { s.during = 'rescan'; }),
+    P('검사 중 검사 프로그램 꺼짐', '검사 중', s => { s.during = 'closed'; }),
+    P('검사 중 [대기 해제]', '검사 중', s => { s.during = 'release'; }),
+    P('검사 중 설정 버튼', '검사 중', s => { s.during = 'setting'; }),
+    P('RouterLink.mdb 없음 (END 안 옴)', '검사 중', s => { s.dest[1].link = false; }),
+    P('END 안 옴 + 타임아웃 30초', '검사 중', s => { s.dest[1].link = false; s.dest[1].timeout = 30; }),
+  ];
+  function scenarioState(i) { const s = defaults(); SCEN[i].fn(s); return s; }
+
+  // ---------------------------------------------------------------- 흐름 보기 (한 줄로 : 간 길 + 안 간 길)
+  const OUT = {};
+  CHARTS.forEach(ch => ch.edges.forEach(e => (OUT[e[0]] = OUT[e[0]] || []).push({ to: e[1], lab: e[2] || '' })));
+  // 간단히 보기에서 생략 : 판단이 평소 길(NORMAL)로 갔을 때 / 부수 처리 (HIDE)
+  const NORMAL = { A02: 'YES', A04: 'YES', A06: '', A07: 'YES', A09: 'YES', B02: 'YES', C02: 'YES', C03: 'YES', C04: 'YES', C05: 'YES', C07: 'YES',
+    C10: 'YES', C11: 'YES', C15: 'YES', C16: 'YES', C18: 'YES', D03: 'YES', D04: 'YES', D05: 'YES', D07: '*', D08: 'YES', P04: 'YES', P09: 'YES',
+    E03: 'YES', E04: 'YES', E11: 'YES', E12: 'YES', E15: 'YES' };
+  const HIDE = new Set(['A03', 'A05', 'A10', 'B03', 'B06', 'C04y', 'C14', 'C17', 'D02', 'D10', 'E02', 'P08']);
+  function view(steps) {
+    let prog = '검사 프로그램';
+    return steps.map((s, i) => {
+      const n = NODE[s.id], next = steps[i + 1];
+      if (s.id === 'P01') prog = (s.note.match(/^(\S+?) 이\(가\)/) || [])[1] || prog;
+      let who = 'Router';
+      if (n.chart === 'B') who = '검사 프로그램';
+      else if (s.id[0] === 'P') who = prog;
+      else if (n.chart === 'E' && n.c >= 2) who = '작업자 버튼';
+      const outs = OUT[s.id] || [];
+      const tk = next ? outs.find(o => o.to === next.id) : null;
+      let others = [];
+      if (n.t === 'd') others = outs.filter(o => o !== tk && o.lab).map(o => ({ lab: o.lab, id: o.to, tx: NODE[o.to].tx }));
+      const taken = tk ? tk.lab : '';
+      let note = (s.note === taken || s.note === 'YES' || s.note === 'NO') ? '' : s.note;
+      if (n.t === 'd') note = note.replace(/^(YES|NO)\b\s*[:·]?\s*/, '').replace(/\s*(→|:)\s*(YES|NO)$/, '').replace(/^\((.*)\)$/, '$1');
+      others = others.map(o => ({ ...o, tx: o.tx.replace(/^→\s*/, '') }));
+      const tk2 = taken || ((s.note === 'YES' || s.note === 'NO') ? s.note : '');
+      const minor = !s.ev && i > 0 && i < steps.length - 1 && (HIDE.has(s.id) || (s.id in NORMAL && (NORMAL[s.id] === '*' || NORMAL[s.id] === tk2)));
+      return { n: i + 1, id: s.id, t: n.t, chart: n.chart, tx: n.tx, tip: n.tip, lg: n.t === 'd' ? '' : n.lg, note, ev: s.ev, who, taken: tk2, others, minor };
+    });
+  }
+
+  const api = { CHARTS, NODE, defaults, simulate, SCEN, scenarioState, isMatch, view };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.FLOW = api;
+})(this);
+
+</script>
+<script>
+(function(){
+'use strict';
+const F = window.FLOW, $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// ---------------------------------------------------------- 배치 (세로로 내려가고, 분기에서만 예 = 오른쪽으로 꺾어 내려감 / 아니오 = 바로 아래 = 에러 · 경고)
+const XP = 300, RP = 150, PADX = 40, TOP = 80;
+const HW = {d: 118, def: 106}, HH = {d: 46, def: 32};
+const hw = n => n.t === 'd' ? HW.d : HW.def, hh = n => n.t === 'd' ? HH.d : HH.def;
+const CH = {}; F.CHARTS.forEach(c => CH[c.id] = c);
+const POS = {}, PK = {}, SIZE = {};      // POS : 노드 → 격자 (x, y) / PK : 선 → 'down' (아래) · 'rd' (오른쪽으로 꺾어 아래) / 나머지 = 연결선
+F.CHARTS.forEach(ch => {
+  const ids = ch.nodes.map(a => a[0]), occ = new Set(), key = (x, y) => x + ',' + y;
+  const outs = id => ch.edges.filter(e => e[0] === id);
+  function put(id, x, y, dir){
+    while (occ.has(key(x, y))) { if (dir === 'rd') x++; else y++; }
+    POS[id] = {x, y}; occ.add(key(x, y));
+  }
+  function walk(id, side){
+    const n = F.NODE[id], p = POS[id];
+    const es = outs(id).filter(e => !e[3]);
+    const order = n.t === 'd' ? es.slice().sort((a, b) => (a[2] === 'NO' ? 0 : 1) - (b[2] === 'NO' ? 0 : 1)) : es;   // 아니오 (아래) 먼저 자리 잡기
+    order.forEach(e => {
+      const to = e[1]; if (POS[to]) return;
+      const t = F.NODE[to];
+      let kind;
+      if (n.t === 'd') kind = (e[2] === 'NO' || side) ? 'down' : 'rd';
+      else kind = t.c === n.c ? 'down' : 'rd';
+      PK[id + '>' + to] = kind;
+      if (kind === 'down') put(to, p.x, p.y + 1, 'down'); else put(to, p.x + 1, p.y + 1, 'rd');
+      walk(to, side || (n.t === 'd' && e[2] === 'NO'));
+    });
+  }
+  let x0 = 0;
+  const starts = ids.filter(id => F.NODE[id].t === 's');
+  starts.forEach(st => {
+    const before = new Set(Object.keys(POS));
+    put(st, x0, 0, 'down'); walk(st, false);
+    // 연결선 (옆 지정) 으로만 닿는 노드 : 오른쪽 아래에 놓고 이어서 배치
+    let more = true;
+    while (more) { more = false;
+      ids.forEach(id => { if (!POS[id] || before.has(id)) return; outs(id).forEach(e => { if (e[3] && !POS[e[1]] && ids.includes(e[1])) { const p = POS[id]; PK[id + '>' + e[1]] = 'rd'; put(e[1], p.x + 1, p.y + 1, 'rd'); walk(e[1], false); more = true; } }); });
+    }
+    const xs = ids.filter(id => POS[id] && !before.has(id)).map(id => POS[id].x);
+    x0 = Math.max(...xs) + 2;
+  });
+  ids.forEach(id => { if (!POS[id]) put(id, x0, 0, 'down'); });   // 선 없는 메모
+  const mx = Math.max(...ids.map(id => POS[id].x)), my = Math.max(...ids.map(id => POS[id].y));
+  SIZE[ch.id] = {w: PADX * 2 + mx * XP + HW.d * 2 + 60, h: TOP + my * RP + HH.d * 2 + 70};
+});
+let chartId = 'C';
+function G(n){ const p = POS[n.id], cx = PADX + HW.d + p.x * XP, cy = TOP + HH.d + p.y * RP;
+  return {cx, cy, l: cx - hw(n), r: cx + hw(n), t: cy - hh(n), b: cy + hh(n)}; }
+const GAPH = (RP - HH.d * 2) / 2;       // 줄 사이 빈 칸 높이의 반
+function route(a, b){
+  const A = G(a), B = G(b), k = PK[a.id + '>' + b.id];
+  if (k === 'down') return {p: [[A.cx, A.b], [B.cx, B.t]], lab: [A.cx + 8, A.b + 17, 'start']};
+  if (k === 'rd') return {p: [[A.r, A.cy], [B.cx, A.cy], [B.cx, B.t]], lab: [A.r + 8, A.cy - 8, 'start']};
+  // 연결선 : 줄 사이 빈 칸으로 가서 대상의 왼쪽으로 들어감
+  if (a.t === 'd'){      // 분기에서 나가는 연결선 (되돌아감 등) 은 왼쪽 꼭짓점에서 나감 - 아래 꼭짓점은 아니오 / 예 아래선이 씀
+    const x = Math.min(A.l, B.l) - 28;
+    return {p: [[A.l, A.cy], [x, A.cy], [x, B.cy], [B.l, B.cy]], lab: [A.l - 8, A.cy - 8, 'end']};
+  }
+  const gy = A.b < B.t ? B.t - GAPH + 2 : A.b + GAPH - 2, gx = B.l - 26;
+  return {p: [[A.cx, A.b], [A.cx, gy], [gx, gy], [gx, B.cy], [B.l, B.cy]], lab: [A.cx + 8, A.b + 17, 'start']};
+}
+function shape(n, g){
+  const w = hw(n), h = hh(n), {cx, cy} = g;
+  if (n.t === 'd') return `<polygon class="sh" points="${cx},${cy-h} ${cx+w},${cy} ${cx},${cy+h} ${cx-w},${cy}"/>`;
+  if (n.t === 'io') return `<polygon class="sh" points="${cx-w+14},${cy-h} ${cx+w},${cy-h} ${cx+w-14},${cy+h} ${cx-w},${cy+h}"/>`;
+  return `<rect class="sh" x="${cx-w}" y="${cy-h}" width="${w*2}" height="${h*2}" rx="${n.t === 's' || n.t === 'e' ? 30 : 2}"/>`;
+}
+function laneOf(ch, n){ if (ch.lanes.length < 2) return ''; const L = ch.lanes.find(l => l.cols.includes(n.c)); return L ? L.name : ''; }
+function draw(){
+  const ch = CH[chartId], S = SIZE[ch.id];
+  let o = `<svg xmlns="http://www.w3.org/2000/svg" width="${S.w}" height="${S.h}" viewBox="0 0 ${S.w} ${S.h}" id="svg">`;
+  o += '<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker></defs>';
+  o += `<rect class="frame" x="0" y="0" width="${S.w}" height="${S.h}" rx="14"/><text class="ftitle" x="20" y="36">${esc(ch.title)}</text>`;
+  ch.edges.forEach(e => {
+    const a = F.NODE[e[0]], b = F.NODE[e[1]], R = route(a, b);
+    o += `<path class="ed${PK[e[0] + '>' + e[1]] ? '' : ' jn'}" id="e_${e[0]}_${e[1]}" d="M${R.p.map(q => q.join(',')).join(' L')}" marker-end="url(#ar)"/>`;
+    if (e[2]){
+      const lab = e[2] === 'YES' ? '예' : e[2] === 'NO' ? '아니오' : e[2];
+      let [x, y, an] = R.lab;
+      if (lab.length > 3 && PK[e[0] + '>' + e[1]] === 'rd'){ x = (R.p[0][0] + R.p[1][0]) / 2; y = R.p[0][1] - 8; an = 'middle'; }
+      o += `<text class="el${e[2] === 'NO' ? ' no' : ''}" id="l_${e[0]}_${e[1]}" x="${x}" y="${y}" text-anchor="${an}">${esc(lab)}</text>`;
+    }
+  });
+  ch.nodes.forEach(a => { const n = F.NODE[a[0]];
+    const g = G(n), w = hw(n), h = hh(n), tip = [n.tx, n.tip, n.lg ? '로그 : ' + n.lg : ''].filter(Boolean).join('\n');
+    const iw = n.t === 'd' ? w * 1.3 : w * 2, ih = n.t === 'd' ? h * 1.4 : h * 2, ln = laneOf(ch, n);
+    o += `<g class="nd ${n.t}${ln && n.c >= 2 ? ' pg' : ''}" id="n_${n.id}"><title>${esc(tip)}</title>${shape(n, g)}`;
+    o += `<foreignObject x="${g.cx - iw/2}" y="${g.cy - ih/2}" width="${iw}" height="${ih}"><div xmlns="http://www.w3.org/1999/xhtml" class="tx">${esc(n.tx)}</div></foreignObject>`;
+    o += `<text class="nid" x="${g.l + (n.t === 'd' ? 8 : 2)}" y="${n.t === 'd' ? g.t + 12 : g.t - 5}">${n.id}${ln ? ' · ' + esc(ln.replace(/ \(.*\)/, '')) : ''}</text></g>`;
+  });
+  o += '<g id="badges"></g></svg>';
+  $('world').innerHTML = o;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.c === chartId));
+}
+function showChart(id, fit){ if (chartId === id && $('svg')) return false; chartId = id; draw(); if (fit !== false) fitChart(false); return true; }
+
+// ---------------------------------------------------------- 확대 / 이동 (Ctrl + 휠, 드래그)
+let s = 1, tx = 0, ty = 0;
+function apply(anim){ const w = $('world'); w.classList.toggle('anim', !!anim); w.style.transform = `translate(${tx}px,${ty}px) scale(${s})`; $('zm').textContent = Math.round(s * 100) + '%'; }
+function fitBox(x0, y0, x1, y1, maxS, anim){
+  const st = $('stage'), W = st.clientWidth, H = st.clientHeight - 90;
+  s = Math.min(maxS || 1.2, (W - 40) / (x1 - x0), (H - 20) / (y1 - y0)); s = Math.max(0.08, s);
+  tx = (W - (x1 - x0) * s) / 2 - x0 * s; ty = 20 - y0 * s + Math.max(0, (H - (y1 - y0) * s) / 2);
+  apply(anim);
+}
+function fitChart(anim){ const S = SIZE[chartId], st = $('stage'), W = st.clientWidth, H = st.clientHeight - 90;
+  s = Math.min(0.9, Math.max((W - 40) / S.w, (H - 20) / S.h)); s = Math.max(0.35, Math.min(s, 0.9));
+  if (S.w * s < W && S.h * s < H) s = Math.min(1, (W - 40) / S.w, (H - 20) / S.h);
+  tx = S.w * s < W ? (W - S.w * s) / 2 : 20; ty = 15; apply(anim); }
+function tabs(){
+  const cnt = {}; if (RES) RES.steps.slice(0, cur < 0 ? RES.steps.length : cur + 1).forEach(x => { const c = F.NODE[x.id].chart; cnt[c] = (cnt[c] || 0) + 1; });
+  $('tabs').innerHTML = F.CHARTS.map(ch => `<button data-c="${ch.id}" class="${ch.id === chartId ? 'on' : ''}">${esc(ch.title)}${cnt[ch.id] ? `<span class="c">${cnt[ch.id]}</span>` : ''}</button>`).join('');
+  $('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { stop(); chartId = b.dataset.c; draw(); fitChart(false); repaint(); tabs(); });
+}
+function repaint(){ if (!RES) return; if (cur >= 0){ paint(cur); const el = $('n_' + RES.steps[cur].id); if (el) el.classList.add('cur'); } else if ($('bResult').classList.contains('on')) paint(RES.steps.length - 1); }
+function center(n, anim){ const g = G(n), st = $('stage'); tx = st.clientWidth / 2 - g.cx * s; ty = (st.clientHeight - 90) / 2 - g.cy * s; apply(anim); }
+const stage = $('stage');
+stage.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = stage.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  if (e.ctrlKey){ const ns = Math.min(3, Math.max(0.08, s * Math.exp(-e.deltaY * 0.0018))); tx = mx - (mx - tx) * ns / s; ty = my - (my - ty) * ns / s; s = ns; }
+  else if (e.shiftKey){ tx -= e.deltaY; }
+  else { tx -= e.deltaX; ty -= e.deltaY; }
+  apply(false);
+}, {passive: false});
+let drag = null;
+stage.addEventListener('mousedown', e => { if (e.button !== 0) return; drag = {x: e.clientX, y: e.clientY, tx, ty}; stage.classList.add('drag'); });
+window.addEventListener('mousemove', e => { if (!drag) return; tx = drag.tx + e.clientX - drag.x; ty = drag.ty + e.clientY - drag.y; apply(false); });
+window.addEventListener('mouseup', () => { drag = null; stage.classList.remove('drag'); });
+window.addEventListener('keydown', e => { if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')){ e.preventDefault(); const st = $('stage'); const mx = st.clientWidth / 2, my = st.clientHeight / 2; const ns = e.key === '0' ? 1 : Math.min(3, Math.max(0.08, s * (e.key === '-' ? 0.85 : 1.18))); tx = mx - (mx - tx) * ns / s; ty = my - (my - ty) * ns / s; s = ns; apply(true); } });
+window.addEventListener('resize', () => apply(false));
+
+// ---------------------------------------------------------- 시나리오 · 재생 / 결과만 보기
+let S, RES = null, VIEW = [], cur = -1, timer = null, curScen = 7;
+function paint(upto){
+  const svg = $('svg'); svg.classList.add('act');
+  svg.querySelectorAll('.v,.cur').forEach(el => el.classList.remove('v', 'cur'));
+  const seen = {};
+  for (let i = 0; i <= upto; i++){ const id = RES.steps[i].id; (seen[id] = seen[id] || []).push(i + 1); }
+  Object.keys(seen).forEach(id => { const el = $('n_' + id); if (el) el.classList.add('v'); });
+  for (let i = 1; i <= upto; i++) for (let k = Math.max(0, i - 3); k < i; k++){
+    const e = $('e_' + RES.steps[k].id + '_' + RES.steps[i].id); if (e){ e.classList.add('v'); const l = $('l_' + RES.steps[k].id + '_' + RES.steps[i].id); if (l) l.classList.add('v'); break; } }
+  let bd = '';
+  Object.keys(seen).forEach(id => { const n = F.NODE[id]; if (n.chart !== chartId) return; const g = G(n), a = seen[id]; const t = a.length > 2 ? a[0] + '…' + a[a.length - 1] : a.join('·');
+    const bw = Math.max(22, t.length * 7.5 + 10), x = n.t === 'd' ? g.cx + 18 : g.r - bw + 8, y = g.t - 12;
+    bd += `<g class="bdg"><rect x="${x}" y="${y}" width="${bw}" height="22" rx="11"/><text x="${x + bw/2}" y="${y + 15.5}" text-anchor="middle">${t}</text></g>`; });
+  $('badges').innerHTML = bd;
+}
+function clear(){ const svg = $('svg'); svg.classList.remove('act'); svg.querySelectorAll('.v,.cur').forEach(el => el.classList.remove('v', 'cur')); $('badges').innerHTML = ''; }
+function capStep(i){
+  const v = VIEW[i], n = F.NODE[v.id], ch = CH[n.chart];
+  $('cap').innerHTML = `<div class="k">${i + 1} / ${RES.steps.length} 단계 · ${esc(ch.title)} · ${esc(v.who)} · ${v.id}</div><div class="t">${v.ev ? '[' + esc(v.ev) + '] ' : ''}${esc(n.tx)}${v.taken ? ` <span class="n">→ ${esc(v.taken === 'YES' ? '예' : v.taken === 'NO' ? '아니오' : v.taken)}</span>` : ''}</div>${v.note ? `<div class="n">${esc(v.note)}</div>` : ''}${v.lg ? `<div class="l">로그 : ${esc(v.lg)}</div>` : ''}`;
+}
+function capResult(){ $('cap').innerHTML = `<div class="k">결과 · ${esc(curScen >= 0 ? F.SCEN[curScen].name : '직접 정한 조건')} · ${RES.steps.length} 단계 (숫자 = 지나간 순서)</div><div class="o">${esc(RES.outcome)}</div>`; }
+function go(i, anim){ cur = Math.max(0, Math.min(RES.steps.length - 1, i)); const ci = F.NODE[RES.steps[cur].id].chart; const sw = ci !== chartId; if (sw){ chartId = ci; draw(); } paint(cur); tabs(); if (sw) anim = false; const el = $('n_' + RES.steps[cur].id); el.classList.add('cur'); capStep(cur); center(F.NODE[RES.steps[cur].id], anim !== false); }
+function next(){ const i = cur + 1; if (i > RES.steps.length - 1) return false; go(i); return true; }
+function prev(){ go(Math.max(0, cur - 1)); }
+function stop(){ if (timer){ clearTimeout(timer); timer = null; } $('bPlay').textContent = '▶ 재생'; }
+function tick(){ if (!next()){ stop(); capResult(); return; } timer = setTimeout(tick, +$('spd').value); }
+function play(){
+  if (!RES || !RES.steps.length) return;
+  if (timer){ stop(); return; }
+  $('bResult').classList.remove('on');
+  $('bPlay').textContent = '❚❚ 멈춤';
+  if (s < 0.6){ s = 0.85; }
+  if (cur < 0 || cur >= RES.steps.length - 1) go(0); else go(cur);
+  timer = setTimeout(tick, +$('spd').value);
+}
+function result(anim){
+  if (!RES || !RES.steps.length) return; stop(); cur = -1;
+  if (!RES.steps.some(x => F.NODE[x.id].chart === chartId)){ chartId = F.NODE[RES.steps[0].id].chart; draw(); }
+  $('bResult').classList.add('on'); paint(RES.steps.length - 1); capResult(); tabs();
+  const gs = [...new Set(RES.steps.map(x => x.id))].filter(id => F.NODE[id].chart === chartId).map(id => G(F.NODE[id]));
+  fitChart(false); const x0 = Math.min(...gs.map(g => g.l)) - 60, y0 = Math.min(...gs.map(g => g.t)) - 60;
+  if (SIZE[chartId].w * s > $('stage').clientWidth) tx = Math.min(20, 20 - x0 * s);
+  if (SIZE[chartId].h * s > $('stage').clientHeight - 90) ty = Math.min(15, 15 - y0 * s);
+  apply(anim !== false);
+}
+function load(autoResult){ stop(); RES = F.simulate(S); VIEW = F.view(RES.steps); cur = -1; clear(); $('bResult').classList.remove('on'); tabs();
+  $('cap').innerHTML = `<div class="k">${esc(curScen >= 0 ? F.SCEN[curScen].name : '직접 정한 조건')} · ${RES.steps.length} 단계</div><div class="o">[▶ 재생] = 한 단계씩 따라감 · [결과만 보기] = 지나간 길을 한 번에</div>`;
+  if (autoResult) result(); }
+
+// 시나리오 목록
+const groups = {}; F.SCEN.forEach((x, i) => (groups[x.group] = groups[x.group] || []).push(i));
+$('scen').innerHTML = Object.keys(groups).map(g => `<optgroup label="${esc(g)}">${groups[g].map(i => `<option value="${i}">${esc(F.SCEN[i].name)}</option>`).join('')}</optgroup>`).join('') + '<option value="-1" disabled>직접 정한 조건</option>';
+$('scen').onchange = () => { curScen = +$('scen').value; S = F.scenarioState(curScen); toForm(); load(true); };
+
+// 조건 패널
+function dstHtml(k){ return `<label><input type="checkbox" data-k="${k}" data-f="enabled"> 사용</label><label><input type="checkbox" data-k="${k}" data-f="running"> 실행 중</label><label><input type="checkbox" data-k="${k}" data-f="com"> COM OK</label><label><input type="checkbox" data-k="${k}" data-f="link"> RouterLink = Yes</label><label>END 타임아웃 <input type="number" min="0" data-k="${k}" data-f="timeout">초</label>`; }
+$('d1').innerHTML = dstHtml(1); $('d2').innerHTML = dstHtml(2);
+function toForm(){
+  $('mode').value = S.mode; $('barcode').value = S.barcode; $('mscode').value = S.mscode; $('plasmaOk').value = S.plasmaOk ? '1' : '0';
+  $('productLen').value = S.productLen; $('op1').value = S.rules[0].op; $('val1').value = S.rules[0].val; $('op2').value = S.rules[1].op; $('val2').value = S.rules[1].val;
+  $('result').value = S.result; $('during').value = S.during;
+  document.querySelectorAll('.dst input[data-k]').forEach(el => { const v = S.dest[el.dataset.k][el.dataset.f]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; });
+  $('rDup').checked = S.router.dup; $('rMdb').checked = S.router.mdbOk; $('rCom').checked = S.router.inputCom; $('rReader').checked = S.router.readerOk;
+  $('pDup').checked = S.prog.dup; $('pSame').checked = S.prog.sameName; modeVis();
+}
+function fromForm(){
+  S.mode = $('mode').value; S.barcode = $('barcode').value; S.mscode = $('mscode').value; S.plasmaOk = $('plasmaOk').value === '1';
+  S.productLen = $('productLen').value; S.rules[0].op = $('op1').value; S.rules[0].val = $('val1').value; S.rules[1].op = $('op2').value; S.rules[1].val = $('val2').value;
+  S.result = $('result').value; S.during = $('during').value;
+  document.querySelectorAll('.dst input[data-k]').forEach(el => { S.dest[el.dataset.k][el.dataset.f] = el.type === 'checkbox' ? el.checked : Math.max(0, +el.value || 0); });
+  S.router = {dup: $('rDup').checked, mdbOk: $('rMdb').checked, inputCom: $('rCom').checked, readerOk: $('rReader').checked};
+  S.prog = {dup: $('pDup').checked, sameName: $('pSame').checked};
+}
+function modeVis(){ const m = $('mode').value;
+  document.querySelectorAll('.m-b').forEach(el => el.style.display = m === 'barcode' || (m === 'router' && el.classList.contains('m-r')) ? '' : 'none');
+  document.querySelectorAll('.m-ro').forEach(el => el.style.display = m === 'router' ? '' : 'none');
+  document.querySelectorAll('.m-p').forEach(el => el.style.display = m === 'prog' ? '' : 'none'); }
+$('mode').onchange = modeVis;
+$('bCond').onclick = () => $('panel').classList.toggle('open');
+$('bClose').onclick = () => $('panel').classList.remove('open');
+$('runBtn').onclick = () => { fromForm(); curScen = -1; $('scen').value = '-1'; $('panel').classList.remove('open'); load(true); };
+
+$('bPlay').onclick = play;
+$('bResult').onclick = () => result(true);
+$('bFit').onclick = () => fitBox(-20, -20, SIZE[chartId].w + 20, SIZE[chartId].h + 20, 1, true);
+$('spd').onchange = () => { if (timer){ clearTimeout(timer); timer = setTimeout(tick, +$('spd').value); } };
+window.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('#panel, select, input')) return;
+  if (!RES) return;
+  if (e.key === 'ArrowRight'){ e.preventDefault(); stop(); if (cur < 0) go(0); else next(); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); stop(); prev(); }
+  else if (e.key === ' '){ e.preventDefault(); play(); }
+});
+
+// 시작
+const hs = new URLSearchParams(location.hash.slice(1));     // 예 #s=12&p=20 / #s=12&r=1 / #fit=1
+curScen = hs.has('s') ? Math.min(F.SCEN.length - 1, Math.max(0, +hs.get('s'))) : 7;
+S = F.scenarioState(curScen); $('scen').value = String(curScen); toForm();
+if (hs.has('c')) chartId = hs.get('c'); draw(); fitChart(false); load(false);
+if (hs.has('r')) result(false);
+else if (hs.has('p')){ s = 0.9; go(+hs.get('p') - 1, false); }
+else if (!hs.has('fit')) result();
+})();
+</script>
+</body>
+</html>

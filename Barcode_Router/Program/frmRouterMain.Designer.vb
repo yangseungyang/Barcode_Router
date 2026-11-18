@@ -41,6 +41,7 @@ Partial Class frmRouterMain
         Me.FlowLayoutPanel_Cards = New System.Windows.Forms.FlowLayoutPanel()
         Me.Button_Manual = New System.Windows.Forms.Button()
         Me.Button_Display = New System.Windows.Forms.Button()
+        Me.Button_Guide = New System.Windows.Forms.Button()
         Me.Label_DestCap = New System.Windows.Forms.Label()
         Me.FlowLayoutPanel_Dest = New System.Windows.Forms.FlowLayoutPanel()
         Me.Label_LogCap = New System.Windows.Forms.Label()
@@ -285,6 +286,15 @@ Partial Class frmRouterMain
         Me.Button_Display.TabStop = False
         Me.Button_Display.Text = "⚙  화면 설정"
         '
+        'Button_Guide (연동 가이드 : 검사 프로그램을 Router 에 붙이는 순서 / 파일 / 명령 / 코드)
+        '
+        Me.Button_Guide.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
+        Me.Button_Guide.Location = New System.Drawing.Point(508, 632)
+        Me.Button_Guide.Name = "Button_Guide"
+        Me.Button_Guide.Size = New System.Drawing.Size(150, 42)
+        Me.Button_Guide.TabStop = False
+        Me.Button_Guide.Text = "⛓  연동 가이드"
+        '
         'Button_Release
         '
         Me.Button_Release.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
@@ -313,6 +323,7 @@ Partial Class frmRouterMain
         Me.Controls.Add(Me.Label_DestCap)
         Me.Controls.Add(Me.FlowLayoutPanel_Cards)
         Me.Controls.Add(Me.Button_Display)
+        Me.Controls.Add(Me.Button_Guide)
         Me.Controls.Add(Me.Panel_BarCodeBorder)
         Me.Controls.Add(Me.Panel_StatusBorder)
         Me.Controls.Add(Me.Panel_Header)
@@ -353,6 +364,7 @@ Partial Class frmRouterMain
     Friend WithEvents FlowLayoutPanel_Cards As System.Windows.Forms.FlowLayoutPanel
     Friend WithEvents Button_Manual As System.Windows.Forms.Button
     Friend WithEvents Button_Display As System.Windows.Forms.Button
+    Friend WithEvents Button_Guide As System.Windows.Forms.Button
     Friend WithEvents Label_DestCap As System.Windows.Forms.Label
     Friend WithEvents FlowLayoutPanel_Dest As System.Windows.Forms.FlowLayoutPanel
     Friend WithEvents Label_LogCap As System.Windows.Forms.Label

@@ -188,6 +188,15 @@ Public Class frmComSetting
                     Exit Sub
                 End If
                 usedPorts.Add(d.Port.ToUpperInvariant)
+
+                '같은 프로그램을 두 대상이 가리키면 어느 쪽이 켜져 있는지 구분하지 못한다 (예 : CPU검사장치 A8 / FAM3 'Inspection System')
+                For Each o As clsDestination In lst
+                    If o.Enabled AndAlso clsWindowControl.IsSameProcessKey(o.ProcessName, d.ProcessName) Then
+                        MessageBox.Show("No " & o.DestID & " / No " & d.DestID & clsLang.L(" : 프로세스명이 같은 프로그램을 가리킵니다 (", " : プロセス名が同じプログラムを指しています (") & d.ProcessName & ")" & vbCrLf &
+                                        clsLang.L("이름이 같은 exe 는 exe 전체 경로를 넣어 주세요.", "同じ名前のexeはexeのフルパスを入力してください。"), clsLang.L("COM 설정", "COM設定"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Exit Sub
+                    End If
+                Next
             End If
             lst.Add(d)
         Next

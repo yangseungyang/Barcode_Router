@@ -141,7 +141,7 @@ Partial Class frmDestEdit
         Me.Label_ProcessHint.Location = New System.Drawing.Point(110, 192)
         Me.Label_ProcessHint.Name = "Label_ProcessHint"
         Me.Label_ProcessHint.Size = New System.Drawing.Size(392, 18)
-        Me.Label_ProcessHint.Text = "바코드를 보낼 때 앞으로 띄울 프로그램 (.exe 없이, 예 : AIEC_HIPOT)"
+        Me.Label_ProcessHint.Text = "프로세스명 또는 exe 전체 경로 (같은 이름 exe 는 전체 경로)"
         '
         'Label_TimeoutCap
         '

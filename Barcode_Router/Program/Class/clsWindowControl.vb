@@ -109,4 +109,30 @@ Public Class clsWindowControl
         Return lst.ToArray
     End Function
 
+    Public Shared Function IsSameProcessKey(ByVal a As String, ByVal b As String) As Boolean
+        '==========================================================================================
+        'Function : 두 분기 대상의 프로세스명이 같은 프로그램을 가리키는지 (설정 저장 시 중복 확인, 2026-11-02)
+        'Remarks  : 둘 다 exe 전체 경로   → 경로가 같으면 같음
+        '           하나라도 이름만        → exe 이름이 같으면 같음 (이름으로 찾으면 경로가 달라도 둘 다 잡히므로)
+        '           비어 있으면 확인하지 않음
+        '==========================================================================================
+        Dim ka As String = a.Trim
+        Dim kb As String = b.Trim
+        If ka = "" OrElse kb = "" Then Return False
+
+        Dim pathA As Boolean = ka.IndexOf("\"c) >= 0
+        Dim pathB As Boolean = kb.IndexOf("\"c) >= 0
+        If pathA AndAlso pathB Then
+            Try
+                Return String.Equals(IO.Path.GetFullPath(ka), IO.Path.GetFullPath(kb), StringComparison.OrdinalIgnoreCase)
+            Catch
+                Return String.Equals(ka, kb, StringComparison.OrdinalIgnoreCase)
+            End Try
+        End If
+
+        Dim nameA As String = If(pathA, IO.Path.GetFileNameWithoutExtension(ka), ka.Replace(".exe", "").Replace(".EXE", ""))
+        Dim nameB As String = If(pathB, IO.Path.GetFileNameWithoutExtension(kb), kb.Replace(".exe", "").Replace(".EXE", ""))
+        Return String.Equals(nameA, nameB, StringComparison.OrdinalIgnoreCase)
+    End Function
+
 End Class
