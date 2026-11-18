@@ -9,7 +9,7 @@ try {
   $ft = $d.Sections.Item(1).Footers.Item(1)
   $ft.PageNumbers.Add(1, $true) | Out-Null
   $hd = $d.Sections.Item(1).Headers.Item(1).Range
-  $hd.Text = "Barcode Router 사용설명서  ·  Ver 0.00  ·  Rev 1"; $hd.Font.Size = 8; $hd.Font.Name = "Malgun Gothic"; $hd.ParagraphFormat.Alignment = 2
+  $hd.Text = "Barcode Router 사용설명서  ·  Ver 0.00  ·  Rev 2"; $hd.Font.Size = 8; $hd.Font.Name = "Malgun Gothic"; $hd.ParagraphFormat.Alignment = 2
   foreach($t in @($d.Tables)){
     $t.Rows.AllowBreakAcrossPages = $true; $t.Rows.Item(1).HeadingFormat = $true
     $t.AllowAutoFit = $true; $t.AutoFitBehavior(1); $t.AutoFitBehavior(2)

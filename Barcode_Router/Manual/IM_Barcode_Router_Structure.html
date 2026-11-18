@@ -101,7 +101,8 @@ p.note{color:var(--muted);font-size:12px}
 <tr><td>COM 송수신</td><td><code>clsRouterPort</code></td><td>리더 COM 수신, 분기 대상 COM 으로 바코드 + 끝 문자 전송, END 수신</td></tr>
 <tr><td>분기 판단</td><td><code>clsRouteJudge</code></td><td>바코드 종류 판단, PLASMA 값으로 규칙을 우선순위 순서로 확인</td></tr>
 <tr><td>실행 확인 · 창 앞으로</td><td><code>clsWindowControl</code></td><td>프로세스명(또는 exe 전체 경로)으로 검사 프로그램 확인, 창 전환</td></tr>
-<tr><td>설정</td><td><code>clsRouterSetting</code></td><td><code>Files\RouterSetting.mdb</code> 읽기 / 쓰기 (COM, 규칙, 화면)</td></tr>
+<tr><td>설정</td><td><code>clsRouterSetting</code></td><td><code>Files\RouterSetting.mdb</code> 읽기 / 쓰기 (COM, 규칙, 화면, 담당자 명단)</td></tr>
+<tr><td>담당자 로그인</td><td><code>frmManagerLogin</code></td><td>사번을 tblManager 에서 확인. 로그인해야 설정 / 연동 가이드 / 설명서 버튼이 보임 (비밀번호 없음)</td></tr>
 </table>
 
 <h3>바코드 1개 처리 순서</h3>
@@ -191,15 +192,15 @@ p.note{color:var(--muted);font-size:12px}
 </figure>
 
 <h2 id="mdb">설정 (RouterSetting.mdb) 과 실제 화면</h2>
-<p class="sub">Router 의 설정은 모두 <code>Files\RouterSetting.mdb</code> 한 파일에 있습니다. 메인 화면 아래 버튼 3개로 여는 설정 창에서 바꾸고, 저장하면 이 파일에 기록됩니다. 프로그램에는 기본값이 없어서 이 파일이 없으면 바코드를 보내지 않습니다.</p>
+<p class="sub">Router 의 설정은 모두 <code>Files\RouterSetting.mdb</code> 한 파일에 있습니다. <b>담당자 로그인 후</b> 메인 화면 아래에 보이는 버튼 3개로 여는 설정 창에서 바꾸고, 저장하면 이 파일에 기록됩니다. 프로그램에는 기본값이 없어서 이 파일이 없으면 바코드를 보내지 않습니다.</p>
 <figure>
-<svg viewBox="0 0 680 310" role="img" aria-label="설정 화면과 MDB 테이블 대응">
+<svg viewBox="0 0 680 370" role="img" aria-label="설정 화면과 MDB 테이블 대응">
 <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
-<g class="g"><rect x="30" y="20" width="170" height="270" rx="16" stroke-width="0.8"/><text class="th" x="115" y="38" text-anchor="middle" dominant-baseline="central">메인 화면 버튼</text></g>
+<g class="g"><rect x="30" y="20" width="170" height="330" rx="16" stroke-width="0.8"/><text class="th" x="115" y="38" text-anchor="middle" dominant-baseline="central">메인 화면 버튼</text></g>
 <a href="#s-rule"><g class="p link"><rect x="50" y="60" width="130" height="44" rx="8" stroke-width="0.8"/><text class="th" x="115" y="82" text-anchor="middle" dominant-baseline="central">분기 조건 설정</text></g></a>
 <a href="#s-com"><g class="p link"><rect x="50" y="130" width="130" height="44" rx="8" stroke-width="0.8"/><text class="th" x="115" y="152" text-anchor="middle" dominant-baseline="central">COM 설정</text></g></a>
 <a href="#s-field"><g class="p link"><rect x="50" y="200" width="130" height="44" rx="8" stroke-width="0.8"/><text class="th" x="115" y="222" text-anchor="middle" dominant-baseline="central">화면 설정</text></g></a>
-<g class="g"><rect x="330" y="20" width="320" height="270" rx="16" stroke-width="0.8"/><text class="th" x="490" y="38" text-anchor="middle" dominant-baseline="central">RouterSetting.mdb</text></g>
+<g class="g"><rect x="330" y="20" width="320" height="330" rx="16" stroke-width="0.8"/><text class="th" x="490" y="38" text-anchor="middle" dominant-baseline="central">RouterSetting.mdb</text></g>
 <a href="#s-rule"><g class="tl link"><rect x="350" y="50" width="280" height="36" rx="6" stroke-width="0.8"/><text class="ts" x="490" y="68" text-anchor="middle" dominant-baseline="central">tblRule · tblRuleCond (분기 규칙 / 조건)</text></g></a>
 <a href="#s-com"><g class="tl link"><rect x="350" y="100" width="280" height="36" rx="6" stroke-width="0.8"/><text class="ts" x="490" y="118" text-anchor="middle" dominant-baseline="central">tblEquipment · tblReader (설비명 / 리더)</text></g></a>
 <a href="#s-dest"><g class="tl link"><rect x="350" y="145" width="280" height="36" rx="6" stroke-width="0.8"/><text class="ts" x="490" y="163" text-anchor="middle" dominant-baseline="central">tblDestination (분기 대상)</text></g></a>
@@ -210,21 +211,28 @@ p.note{color:var(--muted);font-size:12px}
 <path d="M260 152 L260 163 L346 163" class="arr" marker-end="url(#a5)"/>
 <path d="M182 222 L260 222 L260 208 L346 208" class="arr" marker-end="url(#a5)"/>
 <path d="M260 222 L260 253 L346 253" class="arr" marker-end="url(#a5)"/>
+<a href="#s-main"><g class="p link"><rect x="50" y="286" width="130" height="44" rx="8" stroke-width="0.8"/><text class="th" x="115" y="308" text-anchor="middle" dominant-baseline="central">담당자 로그인</text></g></a>
+<a href="#s-main"><g class="tl link"><rect x="350" y="290" width="280" height="36" rx="6" stroke-width="0.8"/><text class="ts" x="490" y="308" text-anchor="middle" dominant-baseline="central">tblManager (담당자 명단 - Access 로 직접)</text></g></a>
+<path d="M182 308 L346 308" class="arr" marker-end="url(#a5)"/>
+<text class="ts cap" x="115" y="270" text-anchor="middle">↑ 로그인해야 보임</text>
 </svg>
 </figure>
 <p class="sub" style="margin-top:6px">상자를 누르면 해당 화면 설명으로 이동합니다. 아래 화면은 CPU검사장치(AIEC005) 실제 설정입니다 (FAM3 CPU검사 = 프로그램1, A8 CPU검사 = 프로그램2).</p>
 
 <div class="shot" id="s-main">
 <h3>메인 화면</h3>
-<p class="where">설정 파일을 읽어 그대로 보여 주는 곳 · 아래 버튼 3개로 설정 창을 엶</p>
-<img src="images/01_main_idle.png" alt="메인 화면" loading="lazy">
+<p class="where">설정 파일을 읽어 그대로 보여 주는 곳 · 담당자 로그인 전 (위) 에는 설정 / 설명서 버튼이 숨겨지고, 로그인 후 (아래) 아래 버튼 줄에 나타남</p>
+<img src="images/01_main_idle.png" alt="메인 화면 - 로그인 전" loading="lazy">
+<img src="images/11_login.png" alt="담당자 로그인 창" loading="lazy" style="margin-top:10px;max-width:380px">
+<img src="images/12_main_login.png" alt="메인 화면 - 로그인 후" loading="lazy" style="margin-top:10px">
 <table>
 <tr><th>화면 위치</th><th>읽는 테이블</th></tr>
 <tr><td>제목줄 가운데 설비명</td><td><span class="tag">tblEquipment</span></td></tr>
 <tr><td>입력 칸 오른쪽 "HID 입력"</td><td><span class="tag">tblReader</span> 입력 방식</td></tr>
 <tr><td>MSCODE · MODEL · SERIAL … 카드</td><td><span class="tag">tblCard</span> (순서, 표시명), 한 줄 개수는 <span class="tag">tblConfig</span> CardsPerRow</td></tr>
 <tr><td>분기 대상 카드 (이름 · COM · 프로세스명 · 상태)</td><td><span class="tag">tblDestination</span></td></tr>
-<tr><td>오른쪽 위 ⓘ 설명서</td><td><span class="tag">tblConfig</span> ManualPath</td></tr>
+<tr><td>오른쪽 위 🔑 로그인 / 로그아웃 · 담당자 이름</td><td><span class="tag">tblManager</span> (사번, 이름, 사용). 자동 로그아웃 분은 <span class="tag">tblConfig</span> LoginTimeoutMin</td></tr>
+<tr><td>아래 설정 버튼 · ⓘ 설명서 (로그인 중에만)</td><td>설명서 파일은 <span class="tag">tblConfig</span> ManualPath</td></tr>
 </table>
 <p class="top"><a href="#mdb">↑ 설정 지도</a></p>
 </div>
@@ -293,7 +301,7 @@ p.note{color:var(--muted);font-size:12px}
 <table>
 <tr><th>탭</th><th>테이블</th><th>뜻</th></tr>
 <tr><td>바코드 종류</td><td>tblBarcodeType</td><td>찍은 바코드가 무엇인지 길이 · 글자 종류 · 패턴으로 판단. 처리 ROUTE = PLASMA 조회 후 분기 / BROADCAST = 모든 대상 (예 : 작업자 사번) / REJECT = 보내지 않음</td></tr>
-<tr><td>기타</td><td>tblConfig</td><td>키 = 값 목록. PlasmaHost1·2 / PlasmaPort / PlasmaCommand (PLASMA 접속), UiFont, ManualPath (ⓘ 설명서), LogKeepMonths, CardsPerRow, UiLanguage. 비우면 그 기능은 동작하지 않음</td></tr>
+<tr><td>기타</td><td>tblConfig</td><td>키 = 값 목록. PlasmaHost1·2 / PlasmaPort / PlasmaCommand (PLASMA 접속), UiFont, ManualPath (ⓘ 설명서), LogKeepMonths, CardsPerRow, UiLanguage, LoginTimeoutMin (담당자 자동 로그아웃 분). 비우면 그 기능은 동작하지 않음</td></tr>
 <tr><td>설정 내보내기 / 가져오기</td><td>(파일 전체)</td><td>다른 설비로 복사, 백업. 가져오면 이전 파일은 Files\Backup\ 에 보관</td></tr>
 </table>
 <p class="top"><a href="#mdb">↑ 설정 지도</a></p>

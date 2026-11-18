@@ -114,6 +114,9 @@
     <Compile Include="Program\frmLinkGuide.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Program\frmManagerLogin.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Program\frmDisplaySetting.vb">
       <SubType>Form</SubType>
     </Compile>

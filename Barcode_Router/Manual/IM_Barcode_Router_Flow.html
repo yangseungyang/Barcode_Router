@@ -114,7 +114,8 @@ svg{display:block;overflow:visible}
 </div>
 <div id="panel">
   <h2>조건 정하기 <button id="bClose">닫기</button></h2>
-  <label class="f"><span>무엇을 볼까</span><select id="mode"><option value="barcode">바코드 1 건 처리</option><option value="router">Router 기동</option><option value="prog">검사 프로그램 기동</option></select></label>
+  <label class="f"><span>무엇을 볼까</span><select id="mode"><option value="barcode">바코드 1 건 처리</option><option value="router">Router 기동</option><option value="prog">검사 프로그램 기동</option><option value="login">담당자 로그인 / 로그아웃</option></select></label>
+  <label class="f m-l"><span>담당자 경우</span><select id="login"><option value="ok">사번 등록됨 → 로그인</option><option value="unknown">등록 안 된 사번</option><option value="empty">명단 (tblManager) 비어 있음</option><option value="nologin">로그인 없이 설정 열기</option><option value="logout">[로그아웃] 버튼</option><option value="auto">자동 로그아웃 (조작 없음)</option></select></label>
   <label class="f m-b"><span>바코드 (6자리 = 제품 인덱스 / 8자리 숫자 = 작업자)</span><input type="text" id="barcode"></label>
   <label class="f m-b"><span>MSCODE (PLASMA 가 돌려줄 값)</span><input type="text" id="mscode"></label>
   <label class="f m-b"><span>PLASMA 조회</span><select id="plasmaOk"><option value="1">OK</option><option value="0">실패 (서버 / 생산정보 없음)</option></select></label>
@@ -141,6 +142,7 @@ svg{display:block;overflow:visible}
 //        Application.myapp(SingleInstance), Files\LinkKit\clsRouterLink.vb,
 //        검사 프로그램 frm001_Main.vb (MainProcess 중복 확인, SerialPort1_DataReceived, txtBarcode_TextChanged),
 //        frm020_InspectionStartEnd.vb (MainProcess 확인 단계), frm030_InspectionInformation.vb (NG / 재검사 / 종료)
+//        담당자 로그인 (2026-11-18) : frmManagerLogin.vb, frmRouterMain ApplyLogin / Button_Login_Click / CheckAutoLogout / CanOpenSetting
 // 노드 형식 : s 시작 · p 처리 · d 판단 · io 신호 · e 정상 끝 · x 오류 끝 · w 경고 · k 다른 차트로
 (function (root) {
   'use strict';
@@ -262,10 +264,12 @@ svg{display:block;overflow:visible}
       ],
     },
     {
-      id: 'E', title: 'E. END 기다리는 동안 (1초 감시 · 버튼)', cols: 4,
-      lanes: [{ name: '1초마다 (Timer_Wait)', cols: [0, 1], cls: 'p' }, { name: '작업자 버튼', cols: [2, 3], cls: 'g' }],
+      id: 'E', title: 'E. 1초 감시 · 버튼 · 담당자 로그인', cols: 4,
+      lanes: [{ name: '1초마다 (Timer_Wait)', cols: [0, 1], cls: 'p' }, { name: '버튼 (작업자 / 담당자)', cols: [2, 3], cls: 'g' }],
       nodes: [
         ['E01', 's', 0, 0, '1초마다'],
+        ['E02', 'd', 0, 1, '자동 로그아웃 시간 안 지남?', '담당자 로그인 중 + 화면 설정 > 기타 > LoginTimeoutMin 분 동안 조작 없음이면 NO. 비우거나 0 = 자동 로그아웃 안 함. 설정 창이 열려 있으면 조작 중'],
+        ['E02n', 'w', 1, 1, '로그아웃 → 설정 / 설명서 버튼 숨김', '', 'Logout (자동 N분) : 사번 이름'],
         ['E03', 'd', 0, 2, 'END 기다리는 대상 있음?'],
         ['E03n', 'p', 1, 2, '끝 (다음 1초)'],
         ['E04', 'd', 0, 3, '대상 프로그램 실행 중?', '기다리는 대상마다 확인'],
@@ -283,17 +287,27 @@ svg{display:block;overflow:visible}
         ['E12n', 'p', 3, 2, '그대로 기다림'],
         ['E13', 'e', 2, 3, '대기 목록 비우기 → 대기 (초록)', '', 'Wait Release (수동) : …'],
         ['E14', 's', 2, 5, '[분기 조건 / COM / 화면 설정] 버튼', '연동 가이드 ⑤ 의 버튼도 같음'],
-        ['E15', 'd', 2, 6, '대기 상태? (END 기다리는 대상 없음)'],
-        ['E15y', 'x', 3, 6, '「검사 중에는 설정을 바꿀 수 없습니다」'],
-        ['E16', 'p', 2, 7, 'Router 포트 모두 닫기 → 설정 화면', '설정 화면에서 포트 시험을 할 수 있게'],
-        ['E17', 'e', 2, 8, '설정 다시 읽기 · 포트 다시 열기 · 대기'],
+        ['E14L', 'd', 2, 6, '담당자 로그인 중?', '로그인 전에는 설정 · 연동 가이드 · 설명서 버튼이 화면에 없음'],
+        ['E14Ln', 'x', 3, 6, '버튼이 보이지 않음 → [🔑 로그인] 먼저'],
+        ['E15', 'd', 2, 7, '대기 상태? (END 기다리는 대상 없음)'],
+        ['E15y', 'x', 3, 7, '「검사 중에는 설정을 바꿀 수 없습니다」'],
+        ['E16', 'p', 2, 8, 'Router 포트 모두 닫기 → 설정 화면', '설정 화면에서 포트 시험을 할 수 있게'],
+        ['E17', 'e', 2, 9, '설정 다시 읽기 · 포트 다시 열기 · 대기'],
+        ['E20', 's', 2, 11, '[🔑 로그인] / [로그아웃] 버튼', '제목줄 오른쪽. 로그인 중에는 [로그아웃]'],
+        ['E20d', 'd', 2, 12, '로그아웃 상태?'],
+        ['E20n', 'e', 3, 12, '로그아웃 → 설정 / 설명서 버튼 숨김', '프로그램을 다시 켜도 항상 로그아웃 상태로 시작', 'Logout (버튼) : 사번 이름'],
+        ['E21', 'p', 2, 13, '담당자 로그인 창 · 사번 입력 → Enter', '비밀번호 없음'],
+        ['E22', 'd', 2, 14, 'tblManager 에 있는 사번? (사용 = Yes)', 'RouterSetting.mdb tblManager (사번, 이름, 사용) - Access 로 직접 등록'],
+        ['E22n', 'x', 3, 14, '「등록되지 않은 사번입니다」', '명단이 비어 있으면 「등록된 담당자가 없습니다」 - 사번 칸이 막혀 로그인 불가'],
+        ['E23', 'e', 2, 15, '로그인 → 설정 · 연동 가이드 · 설명서 버튼 표시', '오른쪽 위에 「담당자 : 이름 (사번)」, 버튼은 [로그아웃] 으로', 'Login : 사번 이름'],
       ],
       edges: [
-        ['E01', 'E03'], ['E03', 'E03n', 'NO'], ['E03', 'E04', 'YES'], ['E04', 'E04n', 'NO'], ['E04', 'E05', 'YES'],
+        ['E01', 'E02'], ['E02', 'E02n', 'NO'], ['E02', 'E03', 'YES'], ['E02n', 'E03', '', 'r', 'r'], ['E03', 'E03n', 'NO'], ['E03', 'E04', 'YES'], ['E04', 'E04n', 'NO'], ['E04', 'E05', 'YES'],
         ['E05', 'E05n', 'NO'], ['E05', 'E07', 'YES'], ['E07', 'E08'], ['E04n', 'E08', '', 'r', 'r'],
         ['E08', 'E08n', 'NO'], ['E08', 'E09', 'YES'],
         ['E10', 'E11'], ['E11', 'E11n', 'NO'], ['E11', 'E12', 'YES'], ['E12', 'E12n', 'NO'], ['E12', 'E13', 'YES'],
-        ['E14', 'E15'], ['E15', 'E15y', 'NO'], ['E15', 'E16', 'YES'], ['E16', 'E17'],
+        ['E14', 'E14L'], ['E14L', 'E14Ln', 'NO'], ['E14L', 'E15', 'YES'], ['E15', 'E15y', 'NO'], ['E15', 'E16', 'YES'], ['E16', 'E17'],
+        ['E20', 'E20d'], ['E20d', 'E20n', 'NO'], ['E20d', 'E21', 'YES'], ['E21', 'E22'], ['E22', 'E22n', 'NO'], ['E22', 'E23', 'YES'],
       ],
     },
   ];
@@ -307,7 +321,8 @@ svg{display:block;overflow:visible}
   // ---------------------------------------------------------------- 기본 조건 (저장소 RouterSetting.mdb 값과 같은 예)
   function defaults() {
     return {
-      mode: 'barcode',              // barcode / router / prog
+      mode: 'barcode',              // barcode / router / prog / login
+      login: 'ok',                  // ok / unknown / empty / nologin / logout / auto (mode = login)
       barcode: 'A1B2C3', mscode: 'F3SP71-4S', plasmaOk: true,
       productLen: 'any',            // any = 길이 제한 없음 (저장소 설정) / six = 6자리만
       rules: [{ pri: 1, target: 'MSCODE', op: 'LIKE', val: 'F3*', dest: 1 }, { pri: 2, target: 'MSCODE', op: 'LIKE', val: 'A8*', dest: 2 }],
@@ -388,6 +403,19 @@ svg{display:block;overflow:visible}
       return { steps: st, outcome };
     }
 
+    if (S.mode === 'login') {
+      const L = S.login;
+      if (L === 'nologin') { add('E14', '작업자가 설정을 열려 함'); add('E14L', '로그인 전 → NO'); add('E14Ln'); return { steps: st, outcome: '설정 / 연동 가이드 / 설명서 버튼이 보이지 않아 열 수 없음' }; }
+      if (L === 'auto') { add('E01'); add('E02', '로그인 중, 10분 동안 조작 없음 → NO'); add('E02n'); add('E03', 'NO'); add('E03n'); return { steps: st, outcome: '자동 로그아웃 → 설정 / 설명서 버튼 숨김 (LoginTimeoutMin = 10)' }; }
+      add('E20');
+      if (L === 'logout') { add('E20d', '로그인 중 → NO'); add('E20n'); return { steps: st, outcome: '로그아웃 → 설정 / 설명서 버튼 숨김' }; }
+      add('E20d', 'YES'); add('E21', L === 'unknown' ? '99999' : '10012345');
+      if (L === 'unknown') { add('E22', '명단에 없음 → NO'); add('E22n'); return { steps: st, outcome: '로그인 안 됨 (버튼은 계속 숨김)' }; }
+      if (L === 'empty') { add('E22', 'tblManager 가 비어 있음 → NO'); add('E22n', '「등록된 담당자가 없습니다」'); return { steps: st, outcome: '로그인 불가 → tblManager 에 담당자를 Access 로 등록' }; }
+      add('E22', 'YES'); add('E23', '홍길동 (10012345)');
+      return { steps: st, outcome: '로그인 → 설정 · 연동 가이드 · 설명서 버튼이 보임' };
+    }
+
     if (S.mode === 'prog') {
       add('B01', S.prog.sameName ? '프로그램1 이 실행 중인 상태에서 프로그램2 실행 (exe 이름이 같음)' : '');
       if (S.prog.dup || S.prog.sameName) {
@@ -459,7 +487,7 @@ svg{display:block;overflow:visible}
     let released = false, outcome = '';
 
     if (S.during === 'rescan') { add('C01', '검사 중에 바코드를 또 찍음', '사건'); add('C02', 'NO'); add('C02y'); }
-    if (S.during === 'setting') { add('E14', '검사 중에 설정 버튼을 누름', '사건'); add('E15', 'NO'); add('E15y'); }
+    if (S.during === 'setting') { add('E14', '검사 중에 설정 버튼을 누름', '사건'); add('E14L', 'YES'); add('E15', 'NO'); add('E15y'); }
 
     const res = { pass: 'PASS', ng_end: 'NG → [종료]', ng_retry: 'NG → [재검사] → PASS', precheck: '시작 확인 오류 → [중지]' };
     const resultOf = [];
@@ -546,6 +574,12 @@ svg{display:block;overflow:visible}
     P('검사 중 검사 프로그램 꺼짐', '검사 중', s => { s.during = 'closed'; }),
     P('검사 중 [대기 해제]', '검사 중', s => { s.during = 'release'; }),
     P('검사 중 설정 버튼', '검사 중', s => { s.during = 'setting'; }),
+    P('담당자 로그인', '담당자', s => { s.mode = 'login'; s.login = 'ok'; }),
+    P('등록 안 된 사번', '담당자', s => { s.mode = 'login'; s.login = 'unknown'; }),
+    P('담당자 명단 비어 있음', '담당자', s => { s.mode = 'login'; s.login = 'empty'; }),
+    P('로그인 없이 설정 (버튼 숨김)', '담당자', s => { s.mode = 'login'; s.login = 'nologin'; }),
+    P('[로그아웃] 버튼', '담당자', s => { s.mode = 'login'; s.login = 'logout'; }),
+    P('자동 로그아웃 (10분)', '담당자', s => { s.mode = 'login'; s.login = 'auto'; }),
     P('RouterLink.mdb 없음 (END 안 옴)', '검사 중', s => { s.dest[1].link = false; }),
     P('END 안 옴 + 타임아웃 30초', '검사 중', s => { s.dest[1].link = false; s.dest[1].timeout = 30; }),
   ];
@@ -557,7 +591,7 @@ svg{display:block;overflow:visible}
   // 간단히 보기에서 생략 : 판단이 평소 길(NORMAL)로 갔을 때 / 부수 처리 (HIDE)
   const NORMAL = { A02: 'YES', A04: 'YES', A06: '', A07: 'YES', A09: 'YES', B02: 'YES', C02: 'YES', C03: 'YES', C04: 'YES', C05: 'YES', C07: 'YES',
     C10: 'YES', C11: 'YES', C15: 'YES', C16: 'YES', C18: 'YES', D03: 'YES', D04: 'YES', D05: 'YES', D07: '*', D08: 'YES', P04: 'YES', P09: 'YES',
-    E03: 'YES', E04: 'YES', E11: 'YES', E12: 'YES', E15: 'YES' };
+    E02: 'YES', E03: 'YES', E04: 'YES', E11: 'YES', E12: 'YES', E14L: 'YES', E15: 'YES', E20d: 'YES', E22: 'YES' };
   const HIDE = new Set(['A03', 'A05', 'A10', 'B03', 'B06', 'C04y', 'C14', 'C17', 'D02', 'D10', 'E02', 'P08']);
   function view(steps) {
     let prog = '검사 프로그램';
@@ -567,7 +601,7 @@ svg{display:block;overflow:visible}
       let who = 'Router';
       if (n.chart === 'B') who = '검사 프로그램';
       else if (s.id[0] === 'P') who = prog;
-      else if (n.chart === 'E' && n.c >= 2) who = '작업자 버튼';
+      else if (n.chart === 'E' && n.c >= 2) who = (n.r >= 11 || s.id === 'E14L' || s.id === 'E14Ln') ? '담당자' : '작업자 버튼';
       const outs = OUT[s.id] || [];
       const tk = next ? outs.find(o => o.to === next.id) : null;
       let others = [];
@@ -785,7 +819,7 @@ $('d1').innerHTML = dstHtml(1); $('d2').innerHTML = dstHtml(2);
 function toForm(){
   $('mode').value = S.mode; $('barcode').value = S.barcode; $('mscode').value = S.mscode; $('plasmaOk').value = S.plasmaOk ? '1' : '0';
   $('productLen').value = S.productLen; $('op1').value = S.rules[0].op; $('val1').value = S.rules[0].val; $('op2').value = S.rules[1].op; $('val2').value = S.rules[1].val;
-  $('result').value = S.result; $('during').value = S.during;
+  $('result').value = S.result; $('during').value = S.during; $('login').value = S.login;
   document.querySelectorAll('.dst input[data-k]').forEach(el => { const v = S.dest[el.dataset.k][el.dataset.f]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v; });
   $('rDup').checked = S.router.dup; $('rMdb').checked = S.router.mdbOk; $('rCom').checked = S.router.inputCom; $('rReader').checked = S.router.readerOk;
   $('pDup').checked = S.prog.dup; $('pSame').checked = S.prog.sameName; modeVis();
@@ -793,7 +827,7 @@ function toForm(){
 function fromForm(){
   S.mode = $('mode').value; S.barcode = $('barcode').value; S.mscode = $('mscode').value; S.plasmaOk = $('plasmaOk').value === '1';
   S.productLen = $('productLen').value; S.rules[0].op = $('op1').value; S.rules[0].val = $('val1').value; S.rules[1].op = $('op2').value; S.rules[1].val = $('val2').value;
-  S.result = $('result').value; S.during = $('during').value;
+  S.result = $('result').value; S.during = $('during').value; S.login = $('login').value;
   document.querySelectorAll('.dst input[data-k]').forEach(el => { S.dest[el.dataset.k][el.dataset.f] = el.type === 'checkbox' ? el.checked : Math.max(0, +el.value || 0); });
   S.router = {dup: $('rDup').checked, mdbOk: $('rMdb').checked, inputCom: $('rCom').checked, readerOk: $('rReader').checked};
   S.prog = {dup: $('pDup').checked, sameName: $('pSame').checked};
@@ -801,7 +835,8 @@ function fromForm(){
 function modeVis(){ const m = $('mode').value;
   document.querySelectorAll('.m-b').forEach(el => el.style.display = m === 'barcode' || (m === 'router' && el.classList.contains('m-r')) ? '' : 'none');
   document.querySelectorAll('.m-ro').forEach(el => el.style.display = m === 'router' ? '' : 'none');
-  document.querySelectorAll('.m-p').forEach(el => el.style.display = m === 'prog' ? '' : 'none'); }
+  document.querySelectorAll('.m-p').forEach(el => el.style.display = m === 'prog' ? '' : 'none');
+  document.querySelectorAll('.m-l').forEach(el => el.style.display = m === 'login' ? '' : 'none'); }
 $('mode').onchange = modeVis;
 $('bCond').onclick = () => $('panel').classList.toggle('open');
 $('bClose').onclick = () => $('panel').classList.remove('open');

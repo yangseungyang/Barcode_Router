@@ -17,11 +17,15 @@
 '             R7  대상별 종료 신호(EndMessage, 예 : END) 수신 → 대기 → Router 창을 앞으로
 '             화면 : Router_UI_시안_v1.html (2026-10-26 승인) - 제목줄, 큰 상태 패널(대기 초록 / 검사 중 주황 /
 '                    오류 빨강 / 조회 중 파랑), 바코드 칸, 제품 정보 카드(tblCard 설정대로), 분기 대상 카드, 로그, 평면 버튼
-'                    제목줄 [설명서] (tblConfig ManualPath), 아래 [화면 설정] (frmDisplaySetting, 2026-10-28)
+'                    [설명서] (tblConfig ManualPath), 아래 [화면 설정] (frmDisplaySetting, 2026-10-28)
 '                    분기 규칙은 검사에 필요한 정보가 아니라 로그에만 남긴다 (2026-10-28 지시)
 '             대상 확인 : 보내기 전에 분기 대상 프로그램(프로세스명)이 실행 중인지 확인, 꺼져 있으면 보내지 않음.
 '                    END 를 기다리는 중 대상이 꺼지면 그 대상은 기다리지 않음. 기다리는 동안 바코드 칸 잠금 (2026-10-28 지시)
 '                    제목줄 가운데 설비명 (COM 설정에서 입력, 2026-10-26 추가)
+'             담당자 로그인 (2026-11-18 지시) : 작업자가 설정을 바꾸지 못하게, 로그인했을 때만 분기 조건 / COM / 화면 설정 /
+'                    연동 가이드 / 설명서 버튼(아래 버튼 줄)을 보인다. [대기 해제] 는 항상 보임. 명단 = tblManager (사번만, 비밀번호 없음)
+'                    로그아웃 : [로그아웃] 버튼 / 프로그램 재시작 / tblConfig LoginTimeoutMin 분 동안 조작 없음 (비우거나 0 = 안 함)
+'                    자동 로그아웃은 기존 1초 타이머(Timer_Wait)에서 시각만 비교한다 (새 타이머 / 스레드 없음)
 '             설정 / 로그 : 저장소 프로젝트 폴더의 Files\RouterSetting.mdb, System_Log\ (clsRouterPath, 공통 규약 7항)
 '                    exe 를 바탕화면 등으로 복사해도 C:\Barcode_Router\Barcode_Router\ 를 읽는다. EtherComN.dll 은 exe 에 내장
 'Issue      : 2026/10/26  Rev 0.00    YSH       New Release
@@ -51,6 +55,8 @@ Public Class frmRouterMain
     Dim mTick As Integer = 0
     Dim mCardValues As New List(Of KeyValuePair(Of String, Label))          '카드 값 칸 (항목ID, Label) - tblCard 로 만든다
     Dim mCardsHeight As Integer = -1                                        '지금 카드 영역 높이 (아래 컨트롤을 그만큼 내린다)
+    Dim mManager As clsManager = Nothing                                    '로그인한 담당자 (Nothing = 로그아웃)
+    Dim mLastActive As DateTime = DateTime.Now                              '담당자가 마지막으로 조작한 시각 (자동 로그아웃용)
 
     Private Delegate Sub LineDelegate(ByVal port As clsRouterPort, ByVal line As String)
 
@@ -64,6 +70,7 @@ Public Class frmRouterMain
         clsUiTheme.StyleButton(Button_Display, clsUiTheme.ButtonKind.Accent)
         clsUiTheme.StyleButton(Button_Guide, clsUiTheme.ButtonKind.Accent)
         clsUiTheme.StyleButton(Button_Manual, clsUiTheme.ButtonKind.Accent)
+        clsUiTheme.StyleButton(Button_Login, clsUiTheme.ButtonKind.Accent)
         Call UpdateReleaseButton()
         WriteLog("Program Start Ver " & Version)
         WriteLog("Data Folder : " & mAppPath & "  (exe : " & Application.ExecutablePath & ")")     '어느 폴더를 쓰는지 로그로 남김
@@ -111,6 +118,7 @@ Public Class frmRouterMain
         clsLang.SetLanguage(mSetting.GetConfig(clsRouterSetting.CFG_UI_LANGUAGE))
         clsUiTheme.SetFontName(mSetting.GetConfig(clsRouterSetting.CFG_UI_FONT))
         Call ApplyLanguageTexts()
+        Call ApplyLogin()               '로그인 상태에 맞게 버튼 표시 / 머리줄 배치 (언어가 바뀌었을 수 있음)
         Call UpdateHeader()             'ApplyLanguageTexts 가 Designer 글자로 되돌린 머리줄을 다시 그림
         Call clsUiTheme.ApplyFont(Me)
         Call BuildCards()
@@ -382,6 +390,7 @@ Public Class frmRouterMain
         '           5초마다 분기 대상 카드(프로그램 실행 여부) 갱신
         '==========================================================================================
         mTick += 1
+        Call CheckAutoLogout()
         Call UpdateHeader()
         If mTick Mod 5 = 0 Then Call RefreshDestList()
         If mPending.Count = 0 Then Exit Sub
@@ -465,6 +474,8 @@ Public Class frmRouterMain
         'Function : 연동 가이드 (검사 프로그램을 Router 에 붙이는 순서 - 가상 COM / RouterLink.mdb / clsRouterLink.vb / 코드 / 등록 / 확인)
         'Remarks  : ⑤ 단계의 버튼은 메인 화면의 COM 설정 / 분기 조건 설정과 같은 처리를 한다 (포트 닫기 → 설정 → 다시 읽기)
         '==========================================================================================
+        If mManager Is Nothing Then Exit Sub
+        mLastActive = DateTime.Now
         Using f As New frmLinkGuide(Sub() Button_Com_Click(Me, EventArgs.Empty), Sub() Button_Rule_Click(Me, EventArgs.Empty))
             f.ShowDialog(Me)
         End Using
@@ -475,6 +486,8 @@ Public Class frmRouterMain
         '==========================================================================================
         'Function : 사용자 설명서 열기 (tblConfig ManualPath - 전체 경로 또는 데이터 폴더 기준 상대 경로)
         '==========================================================================================
+        If mManager Is Nothing Then Exit Sub
+        mLastActive = DateTime.Now
         Dim path As String = mSetting.GetConfig(clsRouterSetting.CFG_MANUAL_PATH)
         If path = "" Then
             MessageBox.Show(clsLang.L("사용자 설명서 파일이 설정되어 있지 않습니다.", "取扱説明書ファイルが設定されていません。") & vbCrLf & clsLang.L("화면 설정 > 기타 > ManualPath 에 넣어 주세요.", "画面設定 > その他 > ManualPath に入力してください。"), clsLang.L("사용자 설명서", "取扱説明書"), MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -494,10 +507,67 @@ Public Class frmRouterMain
     End Sub
 
     Private Function CanOpenSetting() As Boolean
+        If mManager Is Nothing Then Return False    '버튼은 로그인해야 보이지만, 연동 가이드 ⑤ 등 다른 길로 들어와도 막는다
+        mLastActive = DateTime.Now
         If mPending.Count = 0 Then Return True
         MessageBox.Show(clsLang.L("검사 중에는 설정을 바꿀 수 없습니다.", "検査中は設定を変更できません。"), "Barcode Router", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Return False
     End Function
+
+    'Manager login =========================================================================================================
+    Private Sub Button_Login_Click(ByVal sender As Object, ByVal e As EventArgs) Handles Button_Login.Click
+        '==========================================================================================
+        'Function : 로그인 중이면 로그아웃, 아니면 담당자 로그인 창 (사번 → tblManager)
+        '==========================================================================================
+        If mManager IsNot Nothing Then
+            Call Logout(clsLang.L("버튼", "ボタン"))
+            Exit Sub
+        End If
+        Using f As New frmManagerLogin(mSetting)
+            If f.ShowDialog(Me) = DialogResult.OK AndAlso f.Manager IsNot Nothing Then
+                mManager = f.Manager
+                mLastActive = DateTime.Now
+                WriteLog("Login : " & mManager.EmpNo & " " & mManager.EmpName)
+                Call ApplyLogin()
+                Call UpdateHeader()
+            End If
+        End Using
+        TextBox_BarCode.Focus()
+    End Sub
+
+    Private Sub Logout(ByVal reason As String)
+        If mManager Is Nothing Then Exit Sub
+        WriteLog("Logout (" & reason & ") : " & mManager.EmpNo & " " & mManager.EmpName)
+        mManager = Nothing
+        Call ApplyLogin()
+        Call UpdateHeader()
+        TextBox_BarCode.Focus()
+    End Sub
+
+    Private Sub CheckAutoLogout()
+        '==========================================================================================
+        'Function : 자동 로그아웃 (Timer_Wait 1초마다). tblConfig LoginTimeoutMin 분 동안 조작이 없으면 로그아웃
+        '           비우거나 0 이면 하지 않음. 설정 / 설명서 등 다른 창이 열려 있는 동안은 조작 중으로 본다
+        '==========================================================================================
+        If mManager Is Nothing OrElse mSetting Is Nothing Then Exit Sub
+        Dim min As Integer = mSetting.GetConfigInt(clsRouterSetting.CFG_LOGIN_TIMEOUT_MIN)
+        If min <= 0 Then Exit Sub
+        If Application.OpenForms.Count > 1 Then mLastActive = DateTime.Now : Exit Sub
+        If (DateTime.Now - mLastActive).TotalMinutes >= min Then Call Logout(clsLang.L("자동 ", "自動 ") & min & clsLang.L("분", "分"))
+    End Sub
+
+    Private Sub ApplyLogin()
+        '==========================================================================================
+        'Function : 로그인 상태에 맞게 설정 / 설명서 버튼(아래 버튼 줄)을 보이거나 숨긴다
+        '           제목줄 오른쪽 : 로그아웃 상태 [🔑 로그인], 로그인 상태 [로그아웃] + 정보 칸 위 줄에 담당자 이름
+        '==========================================================================================
+        Dim logged As Boolean = (mManager IsNot Nothing)
+        For Each b As Button In {Button_Rule, Button_Com, Button_Display, Button_Guide, Button_Manual}
+            b.Visible = logged
+        Next
+        Button_Login.Text = If(logged, clsLang.L("로그아웃", "ログアウト"), clsLang.L("🔑 로그인", "🔑 ログイン"))
+        If logged Then Label_HeaderInfo.SetBounds(556, 4, 240, 40) Else Label_HeaderInfo.SetBounds(556, 14, 240, 20)     '로그인 중이면 두 줄 (담당자 / 작업자 · 시각)
+    End Sub
 
     'Display ===============================================================================================================
     Private Sub SetReady()
@@ -569,7 +639,9 @@ Public Class frmRouterMain
     End Sub
 
     Private Sub UpdateHeader()
-        Label_HeaderInfo.Text = mOperator & "  ·  " & Format(DateTime.Now, "yyyy-MM-dd HH:mm")       'mOperator = 모든 대상에 보낸 마지막 바코드 (바코드 종류명 + 값)
+        Dim info As String = mOperator & "  ·  " & Format(DateTime.Now, "yyyy-MM-dd HH:mm")       'mOperator = 모든 대상에 보낸 마지막 바코드 (바코드 종류명 + 값)
+        If mManager IsNot Nothing Then info = clsLang.L("담당자 : ", "担当者 : ") & mManager.EmpName & " (" & mManager.EmpNo & ")" & vbCrLf & info     '로그인 중이면 위 줄에 담당자
+        Label_HeaderInfo.Text = info
     End Sub
 
     Private Sub ClearInfo()
@@ -728,7 +800,7 @@ Public Class frmRouterMain
         '==========================================================================================
         Me.Label_HeaderInfo.Text = clsLang.L("작업자 - · 2026-10-26 00:00", "- · 2026-10-26 00:00")
         Me.Label_Equipment.Text = clsLang.L("설비명", "設備名")
-        Me.Button_Manual.Text = clsLang.L("ⓘ 설명서", "ⓘ 説明書")
+        Me.Button_Manual.Text = clsLang.L("ⓘ  설명서", "ⓘ  説明書")
         Me.Label_Status.Text = clsLang.L("바코드를 찍어 주세요", "バーコードを読んでください")
         Me.Label_StatusSub.Text = clsLang.L("대기", "待機")
         Me.Label_InputMode.Text = clsLang.L("HID 입력", "HID入力")

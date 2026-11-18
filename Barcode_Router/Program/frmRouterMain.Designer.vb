@@ -40,6 +40,7 @@ Partial Class frmRouterMain
         Me.Label_ScanIcon = New System.Windows.Forms.Label()
         Me.FlowLayoutPanel_Cards = New System.Windows.Forms.FlowLayoutPanel()
         Me.Button_Manual = New System.Windows.Forms.Button()
+        Me.Button_Login = New System.Windows.Forms.Button()
         Me.Button_Display = New System.Windows.Forms.Button()
         Me.Button_Guide = New System.Windows.Forms.Button()
         Me.Label_DestCap = New System.Windows.Forms.Label()
@@ -60,7 +61,7 @@ Partial Class frmRouterMain
         'Panel_Header
         '
         Me.Panel_Header.BackColor = System.Drawing.Color.FromArgb(CType(CType(12, Byte), Integer), CType(CType(68, Byte), Integer), CType(CType(124, Byte), Integer))
-        Me.Panel_Header.Controls.Add(Me.Button_Manual)
+        Me.Panel_Header.Controls.Add(Me.Button_Login)
         Me.Panel_Header.Controls.Add(Me.Label_Equipment)
         Me.Panel_Header.Controls.Add(Me.Label_HeaderInfo)
         Me.Panel_Header.Controls.Add(Me.Label_Ver)
@@ -110,14 +111,24 @@ Partial Class frmRouterMain
         Me.Label_Equipment.Text = "설비명"
         Me.Label_Equipment.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
         '
-        'Button_Manual (사용자 설명서 - 제목줄 오른쪽)
+        'Button_Manual (사용자 설명서 - 아래 버튼 줄, 담당자 로그인 시에만 보임)
         '
-        Me.Button_Manual.Font = New System.Drawing.Font("맑은 고딕", 9.5!, System.Drawing.FontStyle.Bold)
-        Me.Button_Manual.Location = New System.Drawing.Point(804, 9)
+        Me.Button_Manual.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
+        Me.Button_Manual.Location = New System.Drawing.Point(636, 632)
         Me.Button_Manual.Name = "Button_Manual"
-        Me.Button_Manual.Size = New System.Drawing.Size(84, 30)
+        Me.Button_Manual.Size = New System.Drawing.Size(92, 42)
         Me.Button_Manual.TabStop = False
         Me.Button_Manual.Text = "ⓘ 설명서"
+        Me.Button_Manual.Visible = False
+        '
+        'Button_Login (담당자 로그인 / 로그아웃 - 제목줄 오른쪽. 로그인해야 설정 / 설명서 버튼이 보인다)
+        '
+        Me.Button_Login.Font = New System.Drawing.Font("맑은 고딕", 9.5!, System.Drawing.FontStyle.Bold)
+        Me.Button_Login.Location = New System.Drawing.Point(804, 9)
+        Me.Button_Login.Name = "Button_Login"
+        Me.Button_Login.Size = New System.Drawing.Size(84, 30)
+        Me.Button_Login.TabStop = False
+        Me.Button_Login.Text = "🔑 로그인"
         '
         'Panel_StatusBorder
         '
@@ -266,6 +277,7 @@ Partial Class frmRouterMain
         Me.Button_Rule.Name = "Button_Rule"
         Me.Button_Rule.Size = New System.Drawing.Size(170, 42)
         Me.Button_Rule.TabStop = False
+        Me.Button_Rule.Visible = False
         Me.Button_Rule.Text = "⑂  분기 조건 설정"
         '
         'Button_Com
@@ -273,26 +285,29 @@ Partial Class frmRouterMain
         Me.Button_Com.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
         Me.Button_Com.Location = New System.Drawing.Point(192, 632)
         Me.Button_Com.Name = "Button_Com"
-        Me.Button_Com.Size = New System.Drawing.Size(150, 42)
+        Me.Button_Com.Size = New System.Drawing.Size(140, 42)
         Me.Button_Com.TabStop = False
+        Me.Button_Com.Visible = False
         Me.Button_Com.Text = "⇄  COM 설정"
         '
         'Button_Display (화면 설정 : 항목 / 카드 / 바코드 종류 / 기타, 설정 내보내기 / 가져오기)
         '
         Me.Button_Display.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
-        Me.Button_Display.Location = New System.Drawing.Point(350, 632)
+        Me.Button_Display.Location = New System.Drawing.Point(340, 632)
         Me.Button_Display.Name = "Button_Display"
-        Me.Button_Display.Size = New System.Drawing.Size(150, 42)
+        Me.Button_Display.Size = New System.Drawing.Size(140, 42)
         Me.Button_Display.TabStop = False
+        Me.Button_Display.Visible = False
         Me.Button_Display.Text = "⚙  화면 설정"
         '
         'Button_Guide (연동 가이드 : 검사 프로그램을 Router 에 붙이는 순서 / 파일 / 명령 / 코드)
         '
         Me.Button_Guide.Font = New System.Drawing.Font("맑은 고딕", 10.0!)
-        Me.Button_Guide.Location = New System.Drawing.Point(508, 632)
+        Me.Button_Guide.Location = New System.Drawing.Point(488, 632)
         Me.Button_Guide.Name = "Button_Guide"
-        Me.Button_Guide.Size = New System.Drawing.Size(150, 42)
+        Me.Button_Guide.Size = New System.Drawing.Size(140, 42)
         Me.Button_Guide.TabStop = False
+        Me.Button_Guide.Visible = False
         Me.Button_Guide.Text = "⛓  연동 가이드"
         '
         'Button_Release
@@ -324,6 +339,7 @@ Partial Class frmRouterMain
         Me.Controls.Add(Me.FlowLayoutPanel_Cards)
         Me.Controls.Add(Me.Button_Display)
         Me.Controls.Add(Me.Button_Guide)
+        Me.Controls.Add(Me.Button_Manual)
         Me.Controls.Add(Me.Panel_BarCodeBorder)
         Me.Controls.Add(Me.Panel_StatusBorder)
         Me.Controls.Add(Me.Panel_Header)
@@ -363,6 +379,7 @@ Partial Class frmRouterMain
     Friend WithEvents Label_InputMode As System.Windows.Forms.Label
     Friend WithEvents FlowLayoutPanel_Cards As System.Windows.Forms.FlowLayoutPanel
     Friend WithEvents Button_Manual As System.Windows.Forms.Button
+    Friend WithEvents Button_Login As System.Windows.Forms.Button
     Friend WithEvents Button_Display As System.Windows.Forms.Button
     Friend WithEvents Button_Guide As System.Windows.Forms.Button
     Friend WithEvents Label_DestCap As System.Windows.Forms.Label

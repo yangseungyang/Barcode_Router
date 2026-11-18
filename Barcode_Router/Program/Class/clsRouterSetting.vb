@@ -15,6 +15,8 @@
 '             tblCard        : 메인 화면 제품 정보 카드 (순서, 항목, 표시명)
 '             tblBarcodeType : 바코드 종류 (길이 / 글자 종류 / 패턴 → 처리 : 분기 / 모두에 보냄 / 거부)
 '             tblDestination : EndMessage(종료 신호), LineEnd(끝 문자 CR / LF / CRLF) 열 추가
+'             tblManager     : 담당자 명단 (사번, 이름, 사용) - 로그인해야 설정 / 설명서 버튼이 보인다 (2026-11-18 지시, 비밀번호 없음)
+'                              테이블이 없으면 빈 테이블만 만든다 (명단은 Access 로 직접 넣음)
 '             - 프로그램에는 기본값을 넣지 않는다. 테이블이나 값이 없으면 빈 설정으로 동작하고 로그를 남긴다
 '             - 새 테이블 / 열이 없는 예전 설정 파일은 저장할 때 빈 구조만 만든다 (값은 넣지 않음)
 '             저장은 테이블 내용을 지우고 화면의 내용으로 다시 넣는다
@@ -144,6 +146,13 @@ Public Class clsCard
     Public Enabled As Boolean = True
 End Class
 
+'담당자 (tblManager) =======================================================================================================
+Public Class clsManager
+    Public EmpNo As String = ""                     '사번
+    Public EmpName As String = ""                   '이름
+    Public Enabled As Boolean = True
+End Class
+
 '바코드 종류 (tblBarcodeType) ==============================================================================================
 Public Class clsBarcodeType
     Public Const KIND_ANY As String = "ANY"         '글자 종류 : 아무거나
@@ -178,6 +187,7 @@ Public Class clsRouterSetting
     Public Fields As New List(Of clsField)
     Public Cards As New List(Of clsCard)
     Public BarcodeTypes As New List(Of clsBarcodeType)
+    Public Managers As New List(Of clsManager)      '담당자 명단 (tblManager)
     Public LoadNotes As New List(Of String)         '읽다가 없던 테이블 / 열 (로그용)
 
     'tblConfig 키
@@ -190,6 +200,7 @@ Public Class clsRouterSetting
     Public Const CFG_MANUAL_PATH As String = "ManualPath"
     Public Const CFG_LOG_KEEP_MONTHS As String = "LogKeepMonths"
     Public Const CFG_CARDS_PER_ROW As String = "CardsPerRow"
+    Public Const CFG_LOGIN_TIMEOUT_MIN As String = "LoginTimeoutMin"    '담당자 자동 로그아웃 (분, 비우거나 0 = 자동 로그아웃 안 함)
 
     Public ReadOnly Property DbPath() As String
         Get
@@ -216,6 +227,14 @@ Public Class clsRouterSetting
     Public Function FindField(ByVal fieldID As String) As clsField
         For Each f As clsField In Fields
             If String.Equals(f.FieldID, fieldID, StringComparison.OrdinalIgnoreCase) Then Return f
+        Next
+        Return Nothing
+    End Function
+
+    Public Function FindManager(ByVal empNo As String) As clsManager
+        '사용인 담당자 중 사번이 같은 사람 (앞뒤 공백 무시, 대소문자 무시)
+        For Each m As clsManager In Managers
+            If m.Enabled AndAlso String.Equals(m.EmpNo.Trim, empNo.Trim, StringComparison.OrdinalIgnoreCase) Then Return m
         Next
         Return Nothing
     End Function
@@ -301,6 +320,7 @@ Public Class clsRouterSetting
         Fields = New List(Of clsField)
         Cards = New List(Of clsCard)
         BarcodeTypes = New List(Of clsBarcodeType)
+        Managers = New List(Of clsManager)
         LoadNotes = New List(Of String)
 
         EquipmentName = ""
@@ -379,6 +399,7 @@ Public Class clsRouterSetting
             End Using
 
             Call LoadDisplay(cn)
+            Call LoadManagers(cn)
         End Using
 
     End Sub
@@ -459,6 +480,26 @@ Public Class clsRouterSetting
         Else
             LoadNotes.Add(clsLang.L("tblBarcodeType 없음", "tblBarcodeType なし"))
         End If
+    End Sub
+
+    Private Sub LoadManagers(ByVal cn As OleDbConnection)
+        '==========================================================================================
+        'Function : 담당자 명단 읽기 (tblManager). 테이블이 없으면 빈 테이블만 만든다 (값은 넣지 않음)
+        '==========================================================================================
+        If Not HasTable(cn, "tblManager") Then
+            DDL(cn, "CREATE TABLE tblManager (EmpNo TEXT(20), EmpName TEXT(50), Enabled YESNO)")
+            LoadNotes.Add(clsLang.L("tblManager 없음 → 빈 테이블 만듦 (담당자를 등록해 주세요)", "tblManager なし → 空のテーブルを作成 (担当者を登録してください)"))
+            Exit Sub
+        End If
+        Using cmd As New OleDbCommand("SELECT EmpNo, EmpName, Enabled FROM tblManager", cn)
+            Using r As OleDbDataReader = cmd.ExecuteReader()
+                While r.Read()
+                    Dim m As New clsManager With {.EmpNo = S(r("EmpNo")).Trim, .EmpName = S(r("EmpName")).Trim, .Enabled = B(r("Enabled"))}
+                    If m.EmpNo <> "" Then Managers.Add(m)
+                End While
+            End Using
+        End Using
+        If Managers.Count = 0 Then LoadNotes.Add(clsLang.L("tblManager 담당자 없음 (로그인 불가)", "tblManager 担当者なし (ログイン不可)"))
     End Sub
 
     Public Sub SaveDisplay()

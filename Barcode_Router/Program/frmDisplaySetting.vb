@@ -44,7 +44,8 @@ Public Class frmDisplaySetting
         {clsRouterSetting.CFG_UI_FONT, clsLang.L("화면 글꼴 (PC 에 없으면 Windows 기본 글꼴). 일본어 PC 예 : Meiryo UI", "画面フォント (PCにない場合はWindows標準フォント)。空欄なら言語に合わせて自動")},
         {clsRouterSetting.CFG_MANUAL_PATH, clsLang.L("사용자 설명서 파일 (전체 경로 또는 데이터 폴더 기준 상대 경로)", "取扱説明書ファイル (フルパス、またはデータフォルダからの相対パス)")},
         {clsRouterSetting.CFG_LOG_KEEP_MONTHS, clsLang.L("로그 보관 개월 (오래된 월 폴더는 시작할 때 삭제, 비우면 삭제 안 함)", "ログ保管月数 (古い月フォルダは起動時に削除、空欄なら削除しない)")},
-        {clsRouterSetting.CFG_CARDS_PER_ROW, clsLang.L("제품 정보 카드 한 줄 개수 (비우면 한 줄에 모두)", "製品情報カードの1行の数 (空欄なら1行に全部)")}}
+        {clsRouterSetting.CFG_CARDS_PER_ROW, clsLang.L("제품 정보 카드 한 줄 개수 (비우면 한 줄에 모두)", "製品情報カードの1行の数 (空欄なら1行に全部)")},
+        {clsRouterSetting.CFG_LOGIN_TIMEOUT_MIN, clsLang.L("담당자 자동 로그아웃 (분, 조작이 없으면 로그아웃). 비우거나 0 이면 자동 로그아웃 안 함", "担当者の自動ログアウト (分、操作がなければログアウト)。空欄または0なら自動ログアウトしない")}}
 
     Public Sub New(ByVal setting As clsRouterSetting)
         mSetting = setting
